@@ -25,3 +25,4 @@ go.work.sum
 .env
 /src/dataset/ml-32m
 /src/test
+/src/dataset/ratings30.csv

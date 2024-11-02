@@ -1,25 +1,25 @@
 package fc
 
 import (
-	"bufio"
-	"encoding/csv"
-	"fmt"
-	"net"
-	"os"
-	"sort"
-	"strconv"
-	"sync"
-	"encoding/json"
+    "bufio"
+    "encoding/csv"
+    "encoding/json"
+    "fmt"
+    "net"
+    "os"
+    "sort"
+    "strconv"
+    "sync"
 )
 
 type User struct {
-	ID      int
-	Ratings map[int]float64
+    ID      int
+    Ratings map[int]float64
 }
 
 type FromClientData struct {
-	Similarity float64 `json:"similarity"`
-	UserID     string  `json:"userID"`
+    Similarity float64 `json:"similarity"`
+    UserID     string  `json:"userID"`
 }
 type ToClientData struct {
     User1 map[int]float64 `json:"user1"`
@@ -28,208 +28,226 @@ type ToClientData struct {
 }
 
 var similarities map[int]float64
+var mu sync.Mutex
 
 func ReadRatingsFromCSV(filename string) (map[int]User, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
+    file, err := os.Open(filename)
+    if err != nil {
+        return nil, err
+    }
+    defer file.Close()
 
-	reader := csv.NewReader(file)
-	records, err := reader.ReadAll()
-	if err != nil {
-		return nil, err
-	}
+    reader := csv.NewReader(file)
+    records, err := reader.ReadAll()
+    if err != nil {
+        return nil, err
+    }
 
-	userMap := make(map[int]User) // Cambiado a un mapa
-	for _, record := range records[1:] { // Saltar el encabezado
-		userID, _ := strconv.Atoi(record[0])
-		itemID, _ := strconv.Atoi(record[1])
-		score, _ := strconv.ParseFloat(record[2], 64)
+    userMap := make(map[int]User) // Cambiado a un mapa
+    for _, record := range records[1:] { // Saltar el encabezado
+        userID, _ := strconv.Atoi(record[0])
+        itemID, _ := strconv.Atoi(record[1])
+        score, _ := strconv.ParseFloat(record[2], 64)
 
-		if _, exists := userMap[userID]; !exists {
-			userMap[userID] = User{ID: userID, Ratings: make(map[int]float64)}
-		}
-		userMap[userID].Ratings[itemID] = score
-	}
+        if _, exists := userMap[userID]; !exists {
+            userMap[userID] = User{ID: userID, Ratings: make(map[int]float64)}
+        }
+        userMap[userID].Ratings[itemID] = score
+    }
 
-	fmt.Println("Users:", len(userMap))
-	fmt.Println("Total reviews:", len(records))
+    fmt.Println("Users:", len(userMap))
+    fmt.Println("Total reviews:", len(records))
 
-	return userMap, nil
+    return userMap, nil
 }
 
 // Función para encontrar los usuarios más similares a un usuario dado
 func mostSimilarUsersC(users map[int]User, userID int, ln net.Listener) []int {
-	var wgNodes sync.WaitGroup
-	clientAddresses := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
+    var wgNodes sync.WaitGroup
+    clientAddresses := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
+    nodeStatus := make([]chan bool, len(clientAddresses))
 
-	// Preparar el servidor para recibir conexiones
-	for _, client := range clientAddresses {
-		wgNodes.Add(1)
-		go func(client string) {
-			con, err := ln.Accept()
-			if err != nil {
-				fmt.Println("Error al aceptar la conexión:", err)
-				wgNodes.Done()
-				return
-			}
-			handle(con, &wgNodes)
-		}(client)
-	}
-	
-	for id, user := range users {
-		if id != userID {
-			wgNodes.Add(1)
-			go func(user User) {
-				go sentToClient(users[userID].Ratings, user.Ratings, strconv.Itoa(user.ID), clientAddresses[id%3], &wgNodes)
-				//similarity := cosineSimilarity(users[userID].Ratings, user.Ratings)
-			}(user)
-		}
-	}
+    // Inicializar los canales de estado de los nodos
+    for i := range nodeStatus {
+        nodeStatus[i] = make(chan bool, 1)
+        nodeStatus[i] <- true // Inicialmente, todos los nodos están libres
+    }
 
-	wgNodes.Wait()
-	//---------------
+    // Preparar el servidor para recibir conexiones
+    connChan := make(chan net.Conn)
+    for i := 0; i < 3; i++ { // Crear 3 goroutines para manejar las conexiones
+        wgNodes.Add(1)
+        go func() {
+            defer wgNodes.Done()
+            for con := range connChan {
+                handle(con)
+            }
+        }()
+    }
 
-	// Ordenar los usuarios por similitud
-	type kv struct {
-		Key   int
-		Value float64
-	}
-	var sortedSimilarities []kv
-	for k, v := range similarities {
-		sortedSimilarities = append(sortedSimilarities, kv{k, v})
-	}
-	// Ordenar en orden descendente
-	sort.Slice(sortedSimilarities, func(i, j int) bool {
-		return sortedSimilarities[i].Value > sortedSimilarities[j].Value
-	})
+    go func() {
+        for {
+            con, err := ln.Accept()
+            if err != nil {
+                fmt.Println("Error al aceptar la conexión:", err)
+                continue
+            }
+            connChan <- con
+        }
+    }()
 
-	// Devolver los índices de los usuarios más similares
-	var mostSimilar []int
-	for _, kv := range sortedSimilarities {
-		mostSimilar = append(mostSimilar, kv.Key)
-	}
-	return mostSimilar
+    for id, user := range users {
+        if id != userID {
+            wgNodes.Add(1)
+            go func(user User, nodeStatus chan bool) {
+                defer wgNodes.Done()
+                <-nodeStatus // Esperar hasta que el nodo esté libre
+                sentToClient(users[userID].Ratings, user.Ratings, strconv.Itoa(user.ID), clientAddresses[id%3], nodeStatus)
+            }(user, nodeStatus[id%3])
+        }
+    }
+
+    wgNodes.Wait()
+    close(connChan)
+    //---------------
+
+    // Ordenar los usuarios por similitud
+    type kv struct {
+        Key   int
+        Value float64
+    }
+    var sortedSimilarities []kv
+    for k, v := range similarities {
+        sortedSimilarities = append(sortedSimilarities, kv{k, v})
+    }
+    // Ordenar en orden descendente
+    sort.Slice(sortedSimilarities, func(i, j int) bool {
+        return sortedSimilarities[i].Value > sortedSimilarities[j].Value
+    })
+
+    // Devolver los índices de los usuarios más similares
+    var mostSimilar []int
+    for _, kv := range sortedSimilarities {
+        mostSimilar = append(mostSimilar, kv.Key)
+    }
+    return mostSimilar
 }
 
-func handle(con net.Conn, wg *sync.WaitGroup) {
-	defer wg.Done()
-	defer con.Close()
-	bf := bufio.NewReader(con)
+func handle(con net.Conn) {
+    defer con.Close()
+    bf := bufio.NewReader(con)
 
-	// Leer el mensaje enviado por el cliente
-	msg, err := bf.ReadString('\n')
-	if err != nil {
-		fmt.Println("Error al leer de la conexión:", err)
-		return
-	}
+    // Leer el mensaje enviado por el cliente
+    msg, err := bf.ReadString('\n')
+    if err != nil {
+        fmt.Println("Error al leer de la conexión:", err)
+        return
+    }
 
-	// Deserializar JSON a la estructura FromClientData
-	var message FromClientData
-	err = json.Unmarshal([]byte(msg), &message)
-	if err != nil {
-		fmt.Println("Error al deserializar JSON:", err)
-		return
-	}
+    // Deserializar JSON a la estructura FromClientData
+    var message FromClientData
+    err = json.Unmarshal([]byte(msg), &message)
+    if err != nil {
+        fmt.Println("Error al deserializar JSON:", err)
+        return
+    }
 
-	// Acceder a los datos deserializados
-	similarity := message.Similarity
-	userID := message.UserID
+    // Acceder a los datos deserializados
+    similarity := message.Similarity
+    userID := message.UserID
 
-	// Convertir el userID de string a int
-	userIDInt, err := strconv.Atoi(userID)
-	if err != nil {
-		fmt.Printf("Error al convertir el ID de usuario a entero: %v\n", err)
-		return
-	}
+    // Convertir el userID de string a int
+    userIDInt, err := strconv.Atoi(userID)
+    if err != nil {
+        fmt.Printf("Error al convertir el ID de usuario a entero: %v\n", err)
+        return
+    }
 
-	mu := &sync.Mutex{}
-	mu.Lock()
-	//fmt.Printf("Recibido: Similitud = %f, ID de Usuario = %d\n", similarity, userIDInt)
-	similarities[userIDInt] = similarity
-	mu.Unlock()
+    mu.Lock()
+    fmt.Printf("Recibido: Similitud = %f, ID de Usuario = %d\n", similarity, userIDInt)
+    similarities[userIDInt] = similarity
+    mu.Unlock()
 }
 
+func sentToClient(user1, user2 map[int]float64, id string, dirClient string, nodeStatus chan bool) {
+    conn, err := net.Dial("tcp", dirClient)
+    if err != nil {
+        fmt.Println("Error al conectar al cliente:", err)
+        nodeStatus <- true // Marcar el nodo como libre después de un error
+        return
+    }
+    defer conn.Close()
 
-func sentToClient(user1, user2 map[int]float64, id string, dirClient string, wg *sync.WaitGroup) {
-	defer wg.Done()
-	conn, err := net.Dial("tcp", dirClient)
-	if err != nil {
-		fmt.Println("Error al conectar al cliente:", err)
-		return
-	}
-	defer conn.Close()
+    data := ToClientData{
+        User1: user1,
+        User2: user2,
+        ID:    id,
+    }
+    
+    // Serializar la estructura a JSON
+    jsonData, err := json.Marshal(data)
+    if err != nil {
+        fmt.Println("Error al serializar datos:", err)
+        nodeStatus <- true // Marcar el nodo como libre después de un error
+        return
+    }
 
-	data := ToClientData{
-		User1: user1,
-		User2: user2,
-		ID:    id,
-	}
-	
-	// Serializar la estructura a JSON
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		fmt.Println("Error al serializar datos:", err)
-		return
-	}
-
-	// Enviar datos serializados al cliente
-	_, err = conn.Write(append(jsonData, '\n')) // Agregar nueva línea al final
-	if err != nil {
-		fmt.Println("Error al enviar datos al cliente:", err)
-	}
+    // Enviar datos serializados al cliente
+    _, err = conn.Write(append(jsonData, '\n')) // Agregar nueva línea al final
+    if err != nil {
+        fmt.Println("Error al enviar datos al cliente:", err)
+    }
+    nodeStatus <- true // Marcar el nodo como libre después de enviar los datos
 }
 
 // Función para recomendar ítems a un usuario basado en usuarios similares
 func RecommendItemsC(users map[int]User, userIndex int, numRecommendations int, ln net.Listener) []int {
-	similarities = make(map[int]float64)
-	similarUsers := mostSimilarUsersC(users, userIndex, ln)
+    similarities = make(map[int]float64)
+    similarUsers := mostSimilarUsersC(users, userIndex, ln)
 
-	recommendations := make(map[int]float64)
-	var wg sync.WaitGroup
-	mu := &sync.Mutex{}
+    recommendations := make(map[int]float64)
+    var wg sync.WaitGroup
+    mu := &sync.Mutex{}
 
-	for _, similarUser := range similarUsers {
-		wg.Add(1)
-		go func(similarUser int) {
-			defer wg.Done()
-			for itemID, rating := range users[similarUser].Ratings {
-				// Si el usuario no ha calificado este ítem
-				if _, exists := users[userIndex].Ratings[itemID]; !exists {
-					mu.Lock()
-					recommendations[itemID] += rating
-					mu.Unlock()
-				}
-			}
-		}(similarUser)
-	}
+    for _, similarUser := range similarUsers {
+        wg.Add(1)
+        go func(similarUser int) {
+            defer wg.Done()
+            for itemID, rating := range users[similarUser].Ratings {
+                // Si el usuario no ha calificado este ítem
+                if _, exists := users[userIndex].Ratings[itemID]; !exists {
+                    mu.Lock()
+                    recommendations[itemID] += rating
+                    mu.Unlock()
+                }
+            }
+        }(similarUser)
+    }
 
-	wg.Wait()
+    wg.Wait()
 
-	// Ordenar las recomendaciones por las calificaciones acumuladas
-	type kv struct {
-		Key   int
-		Value float64
-	}
-	var sortedRecommendations []kv
-	for k, v := range recommendations {
-		sortedRecommendations = append(sortedRecommendations, kv{k, v})
-	}
-	// Ordenar en orden descendente
-	sort.Slice(sortedRecommendations, func(i, j int) bool {
-		return sortedRecommendations[i].Value > sortedRecommendations[j].Value
-	})
-	
-	// Devolver los índices de los ítems recomendados
-	var recommendedItems []int
-	for i := 0; i < numRecommendations && i < len(sortedRecommendations); i++ {
-		recommendedItems = append(recommendedItems, sortedRecommendations[i].Key)
-	}
-	// ver todos los items recomendados y sus calificaciones
-	//for _, item := range sortedRecommendations {
-	//	fmt.Printf("Item: %d, Rating: %f\n", item.Key, item.Value)
-	//}
-	return recommendedItems
+    // Ordenar las recomendaciones por las calificaciones acumuladas
+    type kv struct {
+        Key   int
+        Value float64
+    }
+    var sortedRecommendations []kv
+    for k, v := range recommendations {
+        sortedRecommendations = append(sortedRecommendations, kv{k, v})
+    }
+    // Ordenar en orden descendente
+    sort.Slice(sortedRecommendations, func(i, j int) bool {
+        return sortedRecommendations[i].Value > sortedRecommendations[j].Value
+    })
+    
+    // Devolver los índices de los ítems recomendados
+    var recommendedItems []int
+    for i := 0; i < numRecommendations && i < len(sortedRecommendations); i++ {
+        recommendedItems = append(recommendedItems, sortedRecommendations[i].Key)
+    }
+    // ver todos los items recomendados y sus calificaciones
+    //for _, item := range sortedRecommendations {
+    //	fmt.Printf("Item: %d, Rating: %f\n", item.Key, item.Value)
+    //}
+    return recommendedItems
 }

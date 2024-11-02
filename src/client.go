@@ -125,6 +125,6 @@ func sendToServer(similarity float64, userID string) {
         return
     }
 
-    //fmt.Printf("Sending JSON: %s\n", jsonData)
+    fmt.Printf("Sending JSON: %s\n", jsonData)
     fmt.Fprintln(conn, string(jsonData))
 }
