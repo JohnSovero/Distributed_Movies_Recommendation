@@ -78,7 +78,7 @@ func handleClient(conn net.Conn) {
 
     // Calcular similitud de coseno
     similarity := cosineSimilarity(data.User1, data.User2)
-    fmt.Printf("Similarity for user %s: %f\n", data.ID, similarity)
+    //fmt.Printf("Similarity for user %s: %f\n", data.ID, similarity)
 
     // Enviar resultado de vuelta al servidor
     sendToServer(similarity, data.ID)
@@ -125,6 +125,6 @@ func sendToServer(similarity float64, userID string) {
         return
     }
 
-    fmt.Printf("Sending JSON: %s\n", jsonData)
+    //fmt.Printf("Sending JSON: %s\n", jsonData)
     fmt.Fprintln(conn, string(jsonData))
 }

@@ -147,7 +147,7 @@ func handle(con net.Conn, wg *sync.WaitGroup) {
 
 	mu := &sync.Mutex{}
 	mu.Lock()
-	fmt.Printf("Recibido: Similitud = %f, ID de Usuario = %d\n", similarity, userIDInt)
+	//fmt.Printf("Recibido: Similitud = %f, ID de Usuario = %d\n", similarity, userIDInt)
 	similarities[userIDInt] = similarity
 	mu.Unlock()
 }
@@ -228,8 +228,8 @@ func RecommendItemsC(users map[int]User, userIndex int, numRecommendations int, 
 		recommendedItems = append(recommendedItems, sortedRecommendations[i].Key)
 	}
 	// ver todos los items recomendados y sus calificaciones
-	for _, item := range sortedRecommendations {
-		fmt.Printf("Item: %d, Rating: %f\n", item.Key, item.Value)
-	}
+	//for _, item := range sortedRecommendations {
+	//	fmt.Printf("Item: %d, Rating: %f\n", item.Key, item.Value)
+	//}
 	return recommendedItems
 }

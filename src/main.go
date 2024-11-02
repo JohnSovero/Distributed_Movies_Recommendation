@@ -1,16 +1,16 @@
 package main
 
 import (
+    "fmt"
     "log"
 	"PC4/fc"
     "PC4/utils"
 	"net"
-
 )
 
 func main() {
     // Leer archivo de recomendación de películas
-    ratings, err := fc.ReadRatingsFromCSV("dataset/ratings.csv")
+    ratings, err := fc.ReadRatingsFromCSV("dataset/ratings2.csv")
     if err != nil {
         log.Fatalf("Error reading ratings from CSV: %v", err)
     }
@@ -23,7 +23,16 @@ func main() {
     }
     defer ln.Close()
 
-    user := 1
-    // Predecir y manejar conexiones
-    utils.PredictFCC(ratings, user, 8, ln)
+    for {
+        var user int
+        fmt.Print("Ingrese el ID del usuario para obtener recomendaciones (o -1 para salir): ")
+        _, err := fmt.Scanf("%d", &user)
+        if err != nil || user == -1 {
+            fmt.Println("Saliendo...")
+            break
+        }
+
+        // Predecir y manejar conexiones
+        utils.PredictFCC(ratings, user, 8, ln)
+    }
 }
