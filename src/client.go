@@ -8,8 +8,12 @@ import (
     "net"
     "os"
     "strings"
+    "sync"
 )
 
+const(
+    port = "9005"
+)
 var server string
 
 // Estructura para enviar datos al servidor
@@ -30,11 +34,11 @@ func main() {
     fmt.Print("Enter port: ")
     port := getUserInput()
 
-    // Configurar el servidor
+    // Configurar el cliente
     hostname := fmt.Sprintf("localhost:%s", port)
     ln, err := net.Listen("tcp", hostname)
     if err != nil {
-        fmt.Println("Error setting up server:", err)
+        fmt.Println("Error al iniciar el cliente:", err)
         return
     }
     defer ln.Close()
@@ -43,7 +47,7 @@ func main() {
     for {
         conn, err := ln.Accept()
         if err != nil {
-            fmt.Println("Error accepting connection:", err)
+            fmt.Println("Error al aceptar la conexión:", err)
             continue
         }
         go handleClient(conn)
@@ -71,14 +75,10 @@ func handleClient(conn net.Conn) {
 
     // Deserializar JSON a ClientData
     var data ClientData
-    if err = json.Unmarshal([]byte(str), &data); err != nil {
-        fmt.Println("Error deserializing data:", err)
-        return
-    }
+    json.Unmarshal([]byte(str), &data)
 
     // Calcular similitud de coseno
     similarity := cosineSimilarity(data.User1, data.User2)
-    //fmt.Printf("Similarity for user %s: %f\n", data.ID, similarity)
 
     // Enviar resultado de vuelta al servidor
     sendToServer(similarity, data.ID)
@@ -125,6 +125,9 @@ func sendToServer(similarity float64, userID string) {
         return
     }
 
-    //fmt.Printf("Sending JSON: %s\n", jsonData)
+    fmt.Printf("Sending JSON: %s\n", jsonData)
+    mu := &sync.Mutex{}
+    mu.Lock()
     fmt.Fprintln(conn, string(jsonData))
+    mu.Unlock()
 }

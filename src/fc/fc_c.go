@@ -3,15 +3,16 @@ package fc
 import (
 	"bufio"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
-	"encoding/json"
 )
-
+var clientAddresses = []string{"localhost:8000", "localhost:8001", "localhost:8002"}
 type User struct {
 	ID      int
 	Ratings map[int]float64
@@ -28,6 +29,9 @@ type ToClientData struct {
 }
 
 var similarities map[int]float64
+var mu sync.Mutex
+var wg sync.WaitGroup
+var ch = make(chan int, 3)
 
 func ReadRatingsFromCSV(filename string) (map[int]User, error) {
 	file, err := os.Open(filename)
@@ -60,38 +64,44 @@ func ReadRatingsFromCSV(filename string) (map[int]User, error) {
 	return userMap, nil
 }
 
-// Función para encontrar los usuarios más similares a un usuario dado
-func mostSimilarUsersC(users map[int]User, userID int, ln net.Listener) []int {
-	var wgNodes sync.WaitGroup
-	clientAddresses := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
-
-	// Preparar el servidor para recibir conexiones
-	for _, client := range clientAddresses {
-		wgNodes.Add(1)
-		go func(client string) {
-			con, err := ln.Accept()
-			if err != nil {
-				fmt.Println("Error al aceptar la conexión:", err)
-				wgNodes.Done()
-				return
-			}
-			handle(con, &wgNodes)
-		}(client)
+func sentToClient(user1 map[int]float64, user2 map[int]float64, id string, dirClient string) {
+	conn, err := net.Dial("tcp", dirClient)
+	if err != nil {
+		fmt.Println("Error al conectar al cliente:", err)
+		return
 	}
-	
+    defer conn.Close()
+
+	data := ToClientData{
+		User1: user1,
+		User2: user2,
+		ID:    id,
+	}
+	// Serializar la estructura a JSON
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error al serializar datos:", err)
+		return
+	}
+    // Enviar datos al cliente
+    mu.Lock()
+	fmt.Fprintln(conn, string(jsonData))
+    mu.Unlock()
+}
+
+// Función para encontrar los usuarios más similares a un usuario dado
+func mostSimilarUsersC(users map[int]User, userID int) []int {
 	for id, user := range users {
 		if id != userID {
-			wgNodes.Add(1)
-			go func(user User) {
-				go sentToClient(users[userID].Ratings, user.Ratings, strconv.Itoa(user.ID), clientAddresses[id%3], &wgNodes)
-				//similarity := cosineSimilarity(users[userID].Ratings, user.Ratings)
-			}(user)
+			wg.Add(1)
+			go func(user User, id int) {
+                ch <- 1
+				sentToClient(users[userID].Ratings, user.Ratings, strconv.Itoa(user.ID), clientAddresses[id%3])
+			}(user, id)
 		}
 	}
-
-	wgNodes.Wait()
-	//---------------
-
+	wg.Wait()
+    fmt.Printf("Similitudes calculadas: %d\n", len(similarities))
 	// Ordenar los usuarios por similitud
 	type kv struct {
 		Key   int
@@ -114,13 +124,13 @@ func mostSimilarUsersC(users map[int]User, userID int, ln net.Listener) []int {
 	return mostSimilar
 }
 
-func handle(con net.Conn, wg *sync.WaitGroup) {
-	defer wg.Done()
-	defer con.Close()
-	bf := bufio.NewReader(con)
 
-	// Leer el mensaje enviado por el cliente
-	msg, err := bf.ReadString('\n')
+func Handle(con net.Conn) {
+    defer con.Close()
+    defer wg.Done()
+    defer func() { <-ch }() // Liberar espacio en el canal al finalizar
+	msg, err:= bufio.NewReader(con).ReadString('\n')
+    msg = strings.TrimSpace(msg)
 	if err != nil {
 		fmt.Println("Error al leer de la conexión:", err)
 		return
@@ -145,56 +155,27 @@ func handle(con net.Conn, wg *sync.WaitGroup) {
 		return
 	}
 
-	mu := &sync.Mutex{}
+    // Guardar la similitud en un mapa
+
 	mu.Lock()
-	//fmt.Printf("Recibido: Similitud = %f, ID de Usuario = %d\n", similarity, userIDInt)
+	fmt.Printf("Recibido: Similitud = %f, ID de Usuario = %d\n", similarity, userIDInt)
 	similarities[userIDInt] = similarity
 	mu.Unlock()
 }
 
-
-func sentToClient(user1, user2 map[int]float64, id string, dirClient string, wg *sync.WaitGroup) {
-	defer wg.Done()
-	conn, err := net.Dial("tcp", dirClient)
-	if err != nil {
-		fmt.Println("Error al conectar al cliente:", err)
-		return
-	}
-	defer conn.Close()
-
-	data := ToClientData{
-		User1: user1,
-		User2: user2,
-		ID:    id,
-	}
-	
-	// Serializar la estructura a JSON
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		fmt.Println("Error al serializar datos:", err)
-		return
-	}
-
-	// Enviar datos serializados al cliente
-	_, err = conn.Write(append(jsonData, '\n')) // Agregar nueva línea al final
-	if err != nil {
-		fmt.Println("Error al enviar datos al cliente:", err)
-	}
-}
-
 // Función para recomendar ítems a un usuario basado en usuarios similares
-func RecommendItemsC(users map[int]User, userIndex int, numRecommendations int, ln net.Listener) []int {
+func RecommendItemsC(users map[int]User, userIndex int, numRecommendations int) []int {
 	similarities = make(map[int]float64)
-	similarUsers := mostSimilarUsersC(users, userIndex, ln)
-
+	similarUsers := mostSimilarUsersC(users, userIndex)
 	recommendations := make(map[int]float64)
-	var wg sync.WaitGroup
+
+	var wg2 sync.WaitGroup
 	mu := &sync.Mutex{}
 
 	for _, similarUser := range similarUsers {
-		wg.Add(1)
+		wg2.Add(1)
 		go func(similarUser int) {
-			defer wg.Done()
+			defer wg2.Done()
 			for itemID, rating := range users[similarUser].Ratings {
 				// Si el usuario no ha calificado este ítem
 				if _, exists := users[userIndex].Ratings[itemID]; !exists {
@@ -205,9 +186,8 @@ func RecommendItemsC(users map[int]User, userIndex int, numRecommendations int, 
 			}
 		}(similarUser)
 	}
-
-	wg.Wait()
-
+	wg2.Wait()
+    //---------------
 	// Ordenar las recomendaciones por las calificaciones acumuladas
 	type kv struct {
 		Key   int

@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"PC4/fc"
 	"os"
-	"time"
 	"net"
 )
 
+const(
+	port = "9005"
+)
 // LoadDataset carga el archivo CSV y lo convierte en un DataFrame
 func LoadDataset(path string) [][] string {
 	file, err := os.Open(path)
@@ -32,17 +34,29 @@ func LoadDataset(path string) [][] string {
 	return records[1:]
 }
 
-// MeasureExecutionTime mide el tiempo de ejecución de una función
-func MeasureExecutionTime(name string, f func()) {
-    start := time.Now()
-    f()
-    duration := time.Since(start)
-    fmt.Printf("Tiempo de ejecución para %s: %v\n", name, duration)
+// PredictFCC compara los tiempos de entrenamiento de fc y fc_c
+func PredictFCC(users map[int]fc.User, targetUser int, k int) {
+	fmt.Printf("Predicciones para el usuario %d\n", targetUser)
+	recommendationsFCC := fc.RecommendItemsC(users, targetUser, k)
+	fmt.Printf("Recomendaciones de fc_c: %v\n", recommendationsFCC)
 }
 
-// PredictFCC compara los tiempos de entrenamiento de fc y fc_c
-func PredictFCC(users map[int]fc.User, targetUser int, k int, ln net.Listener) {
-	fmt.Printf("Predicciones para el usuario %d\n", targetUser)
-	recommendationsFCC := fc.RecommendItemsC(users, targetUser, k, ln)
-	fmt.Printf("Recomendaciones de fc_c: %v\n", recommendationsFCC)
+func ServicioEscuchar() {
+	//Modo escucha
+	server := fmt.Sprintf("localhost:%s", port) // Puerto 9005
+    ln, err := net.Listen("tcp", server)
+    if err != nil {
+        fmt.Println("Error al iniciar el servidor:", err)
+        return
+    }
+    defer ln.Close()
+    for { // Modo constante de escucha
+        con, err := ln.Accept()
+        if err != nil {
+            fmt.Println("Error al aceptar la conexión:", err)
+            continue
+        }
+		// Manejar concurrentemente las conexiones
+        go fc.Handle(con)
+    }
 }
