@@ -30,7 +30,6 @@ type ToClientData struct {
 
 var similarities map[int]float64
 var mu sync.Mutex
-var wg sync.WaitGroup
 var ch = make(chan int, 3)
 
 func ReadRatingsFromCSV(filename string) (map[int]User, error) {
@@ -93,15 +92,12 @@ func sentToClient(user1 map[int]float64, user2 map[int]float64, id string, dirCl
 func mostSimilarUsersC(users map[int]User, userID int) []int {
 	for id, user := range users {
 		if id != userID {
-			wg.Add(1)
 			go func(user User, id int) {
                 ch <- 1
 				sentToClient(users[userID].Ratings, user.Ratings, strconv.Itoa(user.ID), clientAddresses[id%3])
 			}(user, id)
 		}
 	}
-	
-    fmt.Printf("HOLA")
 	// Ordenar los usuarios por similitud
 	type kv struct {
 		Key   int
@@ -127,7 +123,6 @@ func mostSimilarUsersC(users map[int]User, userID int) []int {
 
 func Handle(con net.Conn) {
     defer con.Close()
-    defer wg.Done()
     defer func() { <-ch }() // Liberar espacio en el canal al finalizar
 	msg, err:= bufio.NewReader(con).ReadString('\n')
     msg = strings.TrimSpace(msg)
