@@ -100,8 +100,8 @@ func mostSimilarUsersC(users map[int]User, userID int) []int {
 			}(user, id)
 		}
 	}
-	wg.Wait()
-    fmt.Printf("Similitudes calculadas: %d\n", len(similarities))
+	
+    fmt.Printf("HOLA")
 	// Ordenar los usuarios por similitud
 	type kv struct {
 		Key   int
@@ -156,9 +156,8 @@ func Handle(con net.Conn) {
 	}
 
     // Guardar la similitud en un mapa
-
 	mu.Lock()
-	fmt.Printf("Recibido: Similitud = %f, ID de Usuario = %d\n", similarity, userIDInt)
+	//fmt.Printf("Recibido: Similitud = %f, ID de Usuario = %d\n", similarity, userIDInt)
 	similarities[userIDInt] = similarity
 	mu.Unlock()
 }
@@ -177,7 +176,6 @@ func RecommendItemsC(users map[int]User, userIndex int, numRecommendations int) 
 		go func(similarUser int) {
 			defer wg2.Done()
 			for itemID, rating := range users[similarUser].Ratings {
-				// Si el usuario no ha calificado este ítem
 				if _, exists := users[userIndex].Ratings[itemID]; !exists {
 					mu.Lock()
 					recommendations[itemID] += rating
@@ -207,9 +205,5 @@ func RecommendItemsC(users map[int]User, userIndex int, numRecommendations int) 
 	for i := 0; i < numRecommendations && i < len(sortedRecommendations); i++ {
 		recommendedItems = append(recommendedItems, sortedRecommendations[i].Key)
 	}
-	// ver todos los items recomendados y sus calificaciones
-	//for _, item := range sortedRecommendations {
-	//	fmt.Printf("Item: %d, Rating: %f\n", item.Key, item.Value)
-	//}
 	return recommendedItems
 }
