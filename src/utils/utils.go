@@ -6,6 +6,7 @@ import (
 	"PC4/fc"
 	"os"
 	"net"
+	"time"
 )
 
 const(
@@ -36,9 +37,12 @@ func LoadDataset(path string) [][] string {
 
 // PredictFCC compara los tiempos de entrenamiento de fc y fc_c
 func PredictFCC(users map[int]fc.User, targetUser int, k int) {
+	start := time.Now()
 	fmt.Printf("Predicciones para el usuario %d\n", targetUser)
 	recommendationsFCC := fc.RecommendItemsC(users, targetUser, k)
 	fmt.Printf("Recomendaciones de fc_c: %v\n", recommendationsFCC)
+	elapsed := time.Since(start)
+	fmt.Printf("Tiempo de ejecución de fc_c: %v\n", elapsed)
 }
 
 func ServicioEscuchar() {

@@ -31,6 +31,7 @@ type ToClientData struct {
 var similarities map[int]float64
 var mu sync.Mutex
 var ch = make(chan int, 3)
+var wg = sync.WaitGroup{}
 
 func ReadRatingsFromCSV(filename string) (map[int]User, error) {
 	file, err := os.Open(filename)
@@ -63,56 +64,75 @@ func ReadRatingsFromCSV(filename string) (map[int]User, error) {
 	return userMap, nil
 }
 
-func sentToClient(user1 map[int]float64, user2 map[int]float64, id string, dirClient string) {
-	conn, err := net.Dial("tcp", dirClient)
-	if err != nil {
-		fmt.Println("Error al conectar al cliente:", err)
-		return
-	}
-    defer conn.Close()
+func sentToClient(user1 map[int]float64, user2 map[int]float64, idUser string, idClient int) {
+    defer wg.Done()
+    defer func() { <-ch }()
+    for {
+		hostClient := clientAddresses[idClient]
+        conn, err := net.Dial("tcp", hostClient)
+		muLocal := &sync.Mutex{}
+        if err == nil {
+            defer conn.Close()
 
-	data := ToClientData{
-		User1: user1,
-		User2: user2,
-		ID:    id,
-	}
-	// Serializar la estructura a JSON
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		fmt.Println("Error al serializar datos:", err)
-		return
-	}
-    // Enviar datos al cliente
-    mu.Lock()
-	fmt.Fprintln(conn, string(jsonData))
-    mu.Unlock()
+            data := ToClientData{
+                User1: user1,
+                User2: user2,
+                ID:    idUser,
+            }
+            // Serializar la estructura a JSON
+            jsonData, err := json.Marshal(data)
+            if err != nil {
+                fmt.Println("Error al serializar datos:", err)
+                return
+            }
+            // Enviar datos al cliente
+            muLocal.Lock()
+            _, err = fmt.Fprintln(conn, string(jsonData))
+            if err != nil {
+                fmt.Println("Error al enviar datos al cliente:", err)
+                return
+            }
+            defer muLocal.Unlock()
+            return
+        } else{
+			muLocal.Lock()
+			idClient++
+			idClient = idClient % 3
+			defer muLocal.Unlock()
+		}
+        fmt.Printf("Error al conectar al cliente: %v. Reintentando...\n", err)
+		fmt.Printf("Intentando con el cliente %d\n", idClient%3)
+    }
 }
 
 // Función para encontrar los usuarios más similares a un usuario dado
 func mostSimilarUsersC(users map[int]User, userID int) []int {
 	for id, user := range users {
 		if id != userID {
+            wg.Add(1)
+			ch <- 1 // Limitar a 3 goroutines concurrentes
 			go func(user User, id int) {
-                ch <- 1
-				sentToClient(users[userID].Ratings, user.Ratings, strconv.Itoa(user.ID), clientAddresses[id%3])
+				sentToClient(users[userID].Ratings, user.Ratings, strconv.Itoa(user.ID), id%3)
 			}(user, id)
 		}
 	}
+    wg.Wait()
 	// Ordenar los usuarios por similitud
 	type kv struct {
 		Key   int
 		Value float64
 	}
 	var sortedSimilarities []kv
+	mu.Lock()
 	for k, v := range similarities {
 		sortedSimilarities = append(sortedSimilarities, kv{k, v})
 	}
-	// Ordenar en orden descendente
+	mu.Unlock()
+
 	sort.Slice(sortedSimilarities, func(i, j int) bool {
 		return sortedSimilarities[i].Value > sortedSimilarities[j].Value
 	})
 
-	// Devolver los índices de los usuarios más similares
 	var mostSimilar []int
 	for _, kv := range sortedSimilarities {
 		mostSimilar = append(mostSimilar, kv.Key)
@@ -120,10 +140,12 @@ func mostSimilarUsersC(users map[int]User, userID int) []int {
 	return mostSimilar
 }
 
-
 func Handle(con net.Conn) {
-    defer con.Close()
-    defer func() { <-ch }() // Liberar espacio en el canal al finalizar
+    defer func() { 
+		//wg.Done()
+		//<-ch 
+		con.Close()
+	}() // Liberar espacio en el canal al finalizar
 	msg, err:= bufio.NewReader(con).ReadString('\n')
     msg = strings.TrimSpace(msg)
 	if err != nil {
@@ -149,12 +171,12 @@ func Handle(con net.Conn) {
 		fmt.Printf("Error al convertir el ID de usuario a entero: %v\n", err)
 		return
 	}
-
+	muHandle:= &sync.Mutex{}
     // Guardar la similitud en un mapa
-	mu.Lock()
-	//fmt.Printf("Recibido: Similitud = %f, ID de Usuario = %d\n", similarity, userIDInt)
+	muHandle.Lock()
+	fmt.Printf("Recibido: Similitud = %f, ID de Usuario = %d\n", similarity, userIDInt)
 	similarities[userIDInt] = similarity
-	mu.Unlock()
+	defer muHandle.Unlock()
 }
 
 // Función para recomendar ítems a un usuario basado en usuarios similares

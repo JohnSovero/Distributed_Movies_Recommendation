@@ -8,7 +8,6 @@ import (
     "net"
     "os"
     "strings"
-    "sync"
 )
 
 const(
@@ -34,9 +33,33 @@ func main() {
     fmt.Print("Enter port: ")
     port := getUserInput()
 
+    servicioEscuchar(port)
+}
+// Maneja la conexión del cliente
+func handleClient(conn net.Conn) {
+    defer conn.Close()
+    str, err := bufio.NewReader(conn).ReadString('\n')
+    if err != nil {
+        fmt.Println("Error reading from connection:", err)
+        return
+    }
+    str = strings.TrimSpace(str)
+
+    // Deserializar JSON a ClientData
+    var data ClientData
+    json.Unmarshal([]byte(str), &data)
+
+    // Calcular similitud de coseno
+    similarity := cosineSimilarity(data.User1, data.User2)
+
+    // Enviar resultado de vuelta al servidor
+    sendToServer(similarity, data.ID)
+}
+
+func servicioEscuchar(port string){
     // Configurar el cliente
-    hostname := fmt.Sprintf("localhost:%s", port)
-    ln, err := net.Listen("tcp", hostname)
+    localDir := fmt.Sprintf("localhost:%s", port)
+    ln, err := net.Listen("tcp", localDir)
     if err != nil {
         fmt.Println("Error al iniciar el cliente:", err)
         return
@@ -53,35 +76,11 @@ func main() {
         go handleClient(conn)
     }
 }
-
 // Lee la entrada del usuario
 func getUserInput() string {
     reader := bufio.NewReader(os.Stdin)
     input, _ := reader.ReadString('\n')
     return strings.TrimSpace(input)
-}
-
-// Maneja la conexión del cliente
-func handleClient(conn net.Conn) {
-    defer conn.Close()
-    r := bufio.NewReader(conn)
-
-    // Leer datos del cliente
-    str, err := r.ReadString('\n')
-    if err != nil {
-        fmt.Println("Error reading from connection:", err)
-        return
-    }
-
-    // Deserializar JSON a ClientData
-    var data ClientData
-    json.Unmarshal([]byte(str), &data)
-
-    // Calcular similitud de coseno
-    similarity := cosineSimilarity(data.User1, data.User2)
-
-    // Enviar resultado de vuelta al servidor
-    sendToServer(similarity, data.ID)
 }
 
 // Función para calcular la similitud coseno entre dos usuarios
@@ -107,27 +106,27 @@ func cosineSimilarity(user1, user2 map[int]float64) float64 {
 
 // Envía resultados al servidor
 func sendToServer(similarity float64, userID string) {
-    conn, err := net.Dial("tcp", server)
-    if err != nil {
-        fmt.Println("Error connecting to server:", err)
-        return
-    }
-    defer conn.Close()
+    for {
+        conn, err := net.Dial("tcp", server)
+        if err == nil {
+            defer conn.Close()
 
-    message := ToServer{
-        Similarity: similarity,
-        UserID:     userID,
-    }
+            message := ToServer{
+                Similarity: similarity,
+                UserID:     userID,
+            }
 
-    jsonData, err := json.Marshal(message)
-    if err != nil {
-        fmt.Println("Error marshaling to JSON:", err)
-        return
-    }
+            jsonData, err := json.Marshal(message)
+            if err != nil {
+                fmt.Println("Error marshaling to JSON:", err)
+                return
+            }
 
-    fmt.Printf("Sending JSON: %s\n", jsonData)
-    mu := &sync.Mutex{}
-    mu.Lock()
-    fmt.Fprintln(conn, string(jsonData))
-    mu.Unlock()
+            fmt.Printf("Sending JSON: %s\n", jsonData)
+            fmt.Fprintln(conn, string(jsonData))
+            return
+        }
+        fmt.Printf("Error connecting to server: %v. Retrying...\n", err)
+    }
 }
+//probar reintentando enviar al server
