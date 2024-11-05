@@ -81,7 +81,6 @@ func divideUsers(users map[int]User, userId int) (map[int]User, map[int]User, ma
         	currentGroup = (currentGroup + 1) % 3 // Avanza al siguiente grupo en rotación
 		}
     }
-
     return group1, group2, group3
 }
 
@@ -106,8 +105,8 @@ func sentToClient(user1 map[int]float64, user2 map[int]User, idClient int) {
                 fmt.Println("Error al enviar datos al cliente:", err)
                 return
             }
-            // recibir 
-			Handle(conn)
+            // Manejar la conexión del cliente 
+			HandleClients(conn)
 			return
         } else{
 			fmt.Printf("Error al conectar al cliente: %v. Reintentando...\n", err)
@@ -124,15 +123,17 @@ func mostSimilarUsersC(users map[int]User, userID int) []int {
 	mu.Lock()
 	group1, group2, group3 := divideUsers(users, userID)
 	mu.Unlock()
-
-	wgRecibidos.Add(3)
+	
+	// Enviar los datos a los clientes
+	wgRecibidos.Add(len(clientAddresses))
 	for i, group := range []map[int]User{group1, group2, group3} {
 		go func (group map[int]User, i int) {
-			sentToClient(users[userID].Ratings, group, i%3)
+			sentToClient(users[userID].Ratings, group, i%len(clientAddresses))
 		}(group, i)
 	}
 	wgRecibidos.Wait()
-	println("Recibidos todos los datos")
+	fmt.Printf("Cantidad de similaridades con usuarios calculadas: %d\n", len(similarities))
+
 	// Ordenar los usuarios por similitud y devolver los más similares
 	var sortedSimilarities []kv
 	for k, v := range similarities {
@@ -148,7 +149,7 @@ func mostSimilarUsersC(users map[int]User, userID int) []int {
 	return mostSimilar
 }
 // Función para manejar las conexiones de los clientes en el servidor
-func Handle(con net.Conn) {
+func HandleClients(con net.Conn) {
 	defer wgRecibidos.Done()
 	defer con.Close()
 	
@@ -161,27 +162,19 @@ func Handle(con net.Conn) {
 	msg = strings.TrimSpace(msg)
 
 	// Deserializar JSON a la estructura FromClientData
-	var message FromClientData
+	var message []FromClientData
 	err = json.Unmarshal([]byte(msg), &message)
 	if err != nil {
 		fmt.Println("Error al deserializar JSON:", err)
 		return
 	}
-
-	// Acceder a los datos deserializados
-	similarity := message.Similarity
-	userID := message.UserID
-
-	// Convertir el userID de string a int
-	userIDInt, err := strconv.Atoi(userID)
-	if err != nil {
-		fmt.Printf("Error al convertir el ID de usuario a entero: %v\n", err)
-		return
-	}
+	fmt.Printf("Recibidos %d datos\n", len(message))
 	muHandle:= &sync.Mutex{}
-	fmt.Printf("Recibido: Similitud = %f, ID de Usuario = %d\n", similarity, userIDInt)
 	muHandle.Lock()
-	similarities[userIDInt] = similarity
+	for _, data := range message {
+		userId, _ := strconv.Atoi(data.UserID)
+		similarities[userId] = data.Similarity
+	}
 	muHandle.Unlock()
 }
 
@@ -191,13 +184,13 @@ func RecommendItemsC(users map[int]User, userIndex int, numRecommendations int) 
 	similarUsers := mostSimilarUsersC(users, userIndex)
 	recommendations := make(map[int]float64)
 
-	var wg2 sync.WaitGroup
+	var wg sync.WaitGroup
 	mu := &sync.Mutex{}
 
 	for _, similarUser := range similarUsers {
-		wg2.Add(1)
+		wg.Add(1)
 		go func(similarUser int) {
-			defer wg2.Done()
+			defer wg.Done()
 			for itemID, rating := range users[similarUser].Ratings {
 				if _, exists := users[userIndex].Ratings[itemID]; !exists {
 					mu.Lock()
@@ -207,7 +200,7 @@ func RecommendItemsC(users map[int]User, userIndex int, numRecommendations int) 
 			}
 		}(similarUser)
 	}
-	wg2.Wait()
+	wg.Wait()
     //---------------
 	// Ordenar las recomendaciones por las calificaciones acumuladas
 	type kv struct {
@@ -228,5 +221,10 @@ func RecommendItemsC(users map[int]User, userIndex int, numRecommendations int) 
 	for i := 0; i < numRecommendations && i < len(sortedRecommendations); i++ {
 		recommendedItems = append(recommendedItems, sortedRecommendations[i].Key)
 	}
+	//imprimir 10 mejores recomendaciones con similaridad
+	//mt.Println("10 mejores recomendaciones con similaridad")
+	//or i := 0; i < 10 && i < len(sortedRecommendations); i++ {
+	//	fmt.Printf("Item: %d, Similaridad: %f\n", sortedRecommendations[i].Key, sortedRecommendations[i].Value)
+	//
 	return recommendedItems
 }
