@@ -12,7 +12,6 @@ import (
 	"strings"
 	"sync"
 )
-var clientAddresses = []string{"localhost:8000", "localhost:8001", "localhost:8002"}
 type User struct {
 	ID      int
 	Ratings map[int]float64
@@ -31,7 +30,7 @@ type kv struct {
 	Key   int
 	Value float64
 }
-
+var clientAddresses = []string{"localhost:8000", "localhost:8001", "localhost:8002"}
 var similarities map[int]float64
 var wgRecibidos = sync.WaitGroup{}
 var userMapQuantity = 0
@@ -87,11 +86,10 @@ func divideUsers(users map[int]User, userId int) (map[int]User, map[int]User, ma
 }
 
 func sentToClient(user1 map[int]float64, user2 map[int]User, idClient int) {
-    for id := 0; id < len(clientAddresses); id++ {
+    for i := 0; i < len(clientAddresses); i++ {
 		hostClient := clientAddresses[idClient]
         conn, err := net.Dial("tcp", hostClient)
 		if err == nil {
-			defer conn.Close()
             data := ToClientData{
                 User1: user1,
                 User2: user2,
@@ -102,20 +100,19 @@ func sentToClient(user1 map[int]float64, user2 map[int]User, idClient int) {
                 fmt.Println("Error al serializar datos:", err)
                 return
             }
-            // Enviar datos al cliente
-			mu := &sync.Mutex{}
-            mu.Lock()
+			// Enviar datos al cliente
             _, err = fmt.Fprintln(conn, string(jsonData))
-			mu.Unlock()
             if err != nil {
                 fmt.Println("Error al enviar datos al cliente:", err)
                 return
             }
-            return
+            // recibir 
+			Handle(conn)
+			return
         } else{
-			idClient = (idClient + 1 ) % (len(clientAddresses))
+			fmt.Printf("Error al conectar al cliente: %v. Reintentando...\n", err)
+			idClient = (idClient + 1 ) % 3
 		}
-        fmt.Printf("Error al conectar al cliente: %v. Reintentando...\n", err)
 		fmt.Printf("Intentando con el cliente %d\n", idClient%len(clientAddresses))
     }
 }
@@ -128,12 +125,14 @@ func mostSimilarUsersC(users map[int]User, userID int) []int {
 	group1, group2, group3 := divideUsers(users, userID)
 	mu.Unlock()
 
-	wgRecibidos.Add(userMapQuantity-1)
+	wgRecibidos.Add(3)
 	for i, group := range []map[int]User{group1, group2, group3} {
-		sentToClient(users[userID].Ratings, group, i%(len(clientAddresses)))
+		go func (group map[int]User, i int) {
+			sentToClient(users[userID].Ratings, group, i%3)
+		}(group, i)
 	}
 	wgRecibidos.Wait()
-
+	println("Recibidos todos los datos")
 	// Ordenar los usuarios por similitud y devolver los más similares
 	var sortedSimilarities []kv
 	for k, v := range similarities {
@@ -150,10 +149,9 @@ func mostSimilarUsersC(users map[int]User, userID int) []int {
 }
 // Función para manejar las conexiones de los clientes en el servidor
 func Handle(con net.Conn) {
-    defer func() { 
-		wgRecibidos.Done()
-		con.Close()
-	}()
+	defer wgRecibidos.Done()
+	defer con.Close()
+	
 	reader := bufio.NewReader(con)
 	msg, err := reader.ReadString('\n')
 	if err != nil {
@@ -181,8 +179,8 @@ func Handle(con net.Conn) {
 		return
 	}
 	muHandle:= &sync.Mutex{}
-	muHandle.Lock()
 	fmt.Printf("Recibido: Similitud = %f, ID de Usuario = %d\n", similarity, userIDInt)
+	muHandle.Lock()
 	similarities[userIDInt] = similarity
 	muHandle.Unlock()
 }

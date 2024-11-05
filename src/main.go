@@ -10,14 +10,11 @@ import (
 
 func main() {
     // Leer archivo de recomendación de películas
-    path := "dataset/ratings.csv"
+    path := "dataset/ratings30.csv"
     ratings, err := fc.ReadRatingsFromCSV(path)
     if err != nil {
         log.Fatalf("Error leyendo los ratings del csv: %v", err)
     }
-
-    //Rol servidor, modo escucha
-    go utils.ServicioEscuchar()
 
     // Leer el id usuario al que se le harán recomendaciones
     for {

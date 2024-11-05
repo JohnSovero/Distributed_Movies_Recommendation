@@ -36,7 +36,6 @@ type ClientData struct {
 
 // Maneja la conexión del cliente
 func handleClient(conn net.Conn) {
-    defer conn.Close()
     str, err := bufio.NewReader(conn).ReadString('\n')
     if err != nil {
         fmt.Println("Error reading from connection:", err)
@@ -52,7 +51,7 @@ func handleClient(conn net.Conn) {
     for _, user := range data.User2 {
         go func(user User) {
             result := cosineSimilarity(data.User1, user.Ratings)
-            sendToServer(result, strconv.Itoa(user.ID))
+            sendToServer(result, strconv.Itoa(user.ID), conn)
         }(user)
     }
 }
@@ -107,26 +106,21 @@ func cosineSimilarity(user1 map[int]float64, user2 map[int]float64) float64 {
 }
 
 // Envía resultados al servidor
-func sendToServer(similarity float64, userID string) {
-    conn, err := net.Dial("tcp", server)
-    if err == nil {
-        defer conn.Close()
-        message := ToServer{
-            Similarity: similarity,
-            UserID:     userID,
-        }
-
-        jsonData, err := json.Marshal(message)
-        if err != nil {
-            fmt.Println("Error marshaling to JSON:", err)
-            return
-        }
-
-        fmt.Printf("Sending JSON: %s\n", jsonData)
-        fmt.Fprintln(conn, string(jsonData))
+func sendToServer(similarity float64, userID string, conn net.Conn) {
+    defer conn.Close()
+    message := ToServer{
+        Similarity: similarity,
+        UserID:     userID,
+    }
+    // serializar
+    jsonData, err := json.Marshal(message)
+    if err != nil {
+        fmt.Println("Error marshaling to JSON:", err)
         return
     }
-    fmt.Printf("Error connecting to server: %v. Retrying...\n", err)
+
+    fmt.Printf("Sending JSON: %s\n", jsonData)
+    fmt.Fprintln(conn, string(jsonData))
 }
 
 func main() {
