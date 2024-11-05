@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"net"
 	"os"
@@ -35,7 +36,7 @@ func handleConnection(conn net.Conn) {
 	defer conn.Close()
 	input, err := bufio.NewReader(conn).ReadString('\n')
 	if err != nil {
-		fmt.Println("Error leyendo de la conexión:", err)
+		log.Println("Error leyendo de la conexión:", err)
 		return
 	}
 	input = strings.TrimSpace(input)
@@ -69,7 +70,7 @@ func startListening(port string) {
 	address := fmt.Sprintf("localhost:%s", port)
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		fmt.Println("Error al iniciar el servicio de escucha:", err)
+		log.Println("Error al iniciar el servicio de escucha:", err)
 		return
 	}
 	defer listener.Close()
@@ -77,7 +78,7 @@ func startListening(port string) {
 	for { // Bucle para aceptar conexiones
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("Error al aceptar conexión:", err)
+			log.Println("Error al aceptar conexión:", err)
 			continue
 		}
 		go handleConnection(conn)
@@ -116,7 +117,7 @@ func sendSimilarityResults(similarityData []SimilarityData, conn net.Conn) {
 	fmt.Printf("Cantidad de datos enviados: %d \n", len(similarityData))
 	jsonData, err := json.Marshal(similarityData)
 	if err != nil {
-		fmt.Println("Error al serializar datos:", err)
+		log.Println("Error al serializar datos:", err)
 		return
 	}
 	fmt.Fprintln(conn, string(jsonData))

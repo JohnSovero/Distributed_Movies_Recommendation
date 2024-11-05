@@ -1,12 +1,10 @@
 package main
 
 import (
-    "fmt"
-    "log"
-	"PC4/fc"
-    "PC4/utils"
+    "PC4/fc"
+	"fmt"
+	"log"
 )
-
 
 func main() {
     // Leer archivo de recomendación de películas
@@ -18,15 +16,14 @@ func main() {
 
     // Leer el id usuario al que se le harán recomendaciones
     for {
-        var user int
+        var userId int
         fmt.Print("Ingrese el ID del usuario para obtener recomendaciones (o -1 para salir): ")
-        _, err := fmt.Scanf("%d", &user)
-        if err != nil || user == -1 {
+        _, err := fmt.Scanf("%d", &userId)
+        if err != nil || userId == -1 {
             fmt.Println("Saliendo...")
             break
         }
-
         // Predecir y manejar conexiones
-        utils.PredictFCC(ratings, user, 8)
+        fc.PredictFC(ratings, userId, 8)
     }
 }
