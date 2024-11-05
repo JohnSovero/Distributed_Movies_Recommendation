@@ -12,6 +12,7 @@ import (
 const(
 	port = "9005"
 )
+
 // LoadDataset carga el archivo CSV y lo convierte en un DataFrame
 func LoadDataset(path string) [][] string {
 	file, err := os.Open(path)
@@ -47,15 +48,15 @@ func PredictFCC(users map[int]fc.User, targetUser int, k int) {
 
 func ServicioEscuchar() {
 	//Modo escucha
-	server := fmt.Sprintf("localhost:%s", port) // Puerto 9005
-    ln, err := net.Listen("tcp", server)
+	dirServer := fmt.Sprintf("localhost:%s", port) // Puerto 9005
+    listenServer, err := net.Listen("tcp", dirServer)
     if err != nil {
         fmt.Println("Error al iniciar el servidor:", err)
         return
     }
-    defer ln.Close()
+    defer listenServer.Close()
     for { // Modo constante de escucha
-        con, err := ln.Accept()
+        con, err := listenServer.Accept()
         if err != nil {
             fmt.Println("Error al aceptar la conexión:", err)
             continue

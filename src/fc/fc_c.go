@@ -24,15 +24,19 @@ type FromClientData struct {
 }
 type ToClientData struct {
     User1 map[int]float64 `json:"user1"`
-    User2 map[int]float64 `json:"user2"`
-    ID    string          `json:"id"` // Puede ser un string o int, según lo que necesites
+    User2 map[int]User `json:"user2"`
+}
+
+type kv struct {
+	Key   int
+	Value float64
 }
 
 var similarities map[int]float64
-var mu sync.Mutex
-var ch = make(chan int, 3)
-var wg = sync.WaitGroup{}
+var wgRecibidos = sync.WaitGroup{}
+var userMapQuantity = 0
 
+// Leer los ratings de un archivo CSV
 func ReadRatingsFromCSV(filename string) (map[int]User, error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -57,27 +61,40 @@ func ReadRatingsFromCSV(filename string) (map[int]User, error) {
 		}
 		userMap[userID].Ratings[itemID] = score
 	}
-
 	fmt.Println("Users:", len(userMap))
 	fmt.Println("Total reviews:", len(records))
-
+	userMapQuantity = len(userMap)
 	return userMap, nil
 }
 
-func sentToClient(user1 map[int]float64, user2 map[int]float64, idUser string, idClient int) {
-    defer wg.Done()
-    defer func() { <-ch }()
-    for {
+// Función para dividir los usuarios en 3 grupos
+func divideUsers(users map[int]User, userId int) (map[int]User, map[int]User, map[int]User) {
+    group1 := make(map[int]User)
+    group2 := make(map[int]User)
+    group3 := make(map[int]User)
+
+    groups := []map[int]User{group1, group2, group3}
+    currentGroup := 0
+
+    for id, user := range users {
+		if user.ID != userId{
+			groups[currentGroup][id] = user
+        	currentGroup = (currentGroup + 1) % 3 // Avanza al siguiente grupo en rotación
+		}
+    }
+
+    return group1, group2, group3
+}
+
+func sentToClient(user1 map[int]float64, user2 map[int]User, idClient int) {
+    for id := 0; id < len(clientAddresses); id++ {
 		hostClient := clientAddresses[idClient]
         conn, err := net.Dial("tcp", hostClient)
-		muLocal := &sync.Mutex{}
-        if err == nil {
-            defer conn.Close()
-
+		if err == nil {
+			defer conn.Close()
             data := ToClientData{
                 User1: user1,
                 User2: user2,
-                ID:    idUser,
             }
             // Serializar la estructura a JSON
             jsonData, err := json.Marshal(data)
@@ -86,72 +103,64 @@ func sentToClient(user1 map[int]float64, user2 map[int]float64, idUser string, i
                 return
             }
             // Enviar datos al cliente
-            muLocal.Lock()
+			mu := &sync.Mutex{}
+            mu.Lock()
             _, err = fmt.Fprintln(conn, string(jsonData))
+			mu.Unlock()
             if err != nil {
                 fmt.Println("Error al enviar datos al cliente:", err)
                 return
             }
-            defer muLocal.Unlock()
             return
         } else{
-			muLocal.Lock()
-			idClient++
-			idClient = idClient % 3
-			defer muLocal.Unlock()
+			idClient = (idClient + 1 ) % (len(clientAddresses))
 		}
         fmt.Printf("Error al conectar al cliente: %v. Reintentando...\n", err)
-		fmt.Printf("Intentando con el cliente %d\n", idClient%3)
+		fmt.Printf("Intentando con el cliente %d\n", idClient%len(clientAddresses))
     }
 }
 
 // Función para encontrar los usuarios más similares a un usuario dado
 func mostSimilarUsersC(users map[int]User, userID int) []int {
-	for id, user := range users {
-		if id != userID {
-            wg.Add(1)
-			ch <- 1 // Limitar a 3 goroutines concurrentes
-			go func(user User, id int) {
-				sentToClient(users[userID].Ratings, user.Ratings, strconv.Itoa(user.ID), id%3)
-			}(user, id)
-		}
-	}
-    wg.Wait()
-	// Ordenar los usuarios por similitud
-	type kv struct {
-		Key   int
-		Value float64
-	}
-	var sortedSimilarities []kv
+	// Esperar que se dividan los usuarios
+	mu := &sync.Mutex{}
 	mu.Lock()
+	group1, group2, group3 := divideUsers(users, userID)
+	mu.Unlock()
+
+	wgRecibidos.Add(userMapQuantity-1)
+	for i, group := range []map[int]User{group1, group2, group3} {
+		sentToClient(users[userID].Ratings, group, i%(len(clientAddresses)))
+	}
+	wgRecibidos.Wait()
+
+	// Ordenar los usuarios por similitud y devolver los más similares
+	var sortedSimilarities []kv
 	for k, v := range similarities {
 		sortedSimilarities = append(sortedSimilarities, kv{k, v})
 	}
-	mu.Unlock()
-
 	sort.Slice(sortedSimilarities, func(i, j int) bool {
 		return sortedSimilarities[i].Value > sortedSimilarities[j].Value
 	})
-
 	var mostSimilar []int
 	for _, kv := range sortedSimilarities {
 		mostSimilar = append(mostSimilar, kv.Key)
 	}
 	return mostSimilar
 }
-
+// Función para manejar las conexiones de los clientes en el servidor
 func Handle(con net.Conn) {
     defer func() { 
-		//wg.Done()
-		//<-ch 
+		wgRecibidos.Done()
 		con.Close()
-	}() // Liberar espacio en el canal al finalizar
-	msg, err:= bufio.NewReader(con).ReadString('\n')
-    msg = strings.TrimSpace(msg)
+	}()
+	reader := bufio.NewReader(con)
+	msg, err := reader.ReadString('\n')
 	if err != nil {
 		fmt.Println("Error al leer de la conexión:", err)
 		return
 	}
+	msg = strings.TrimSpace(msg)
 
 	// Deserializar JSON a la estructura FromClientData
 	var message FromClientData
@@ -172,11 +181,10 @@ func Handle(con net.Conn) {
 		return
 	}
 	muHandle:= &sync.Mutex{}
-    // Guardar la similitud en un mapa
 	muHandle.Lock()
 	fmt.Printf("Recibido: Similitud = %f, ID de Usuario = %d\n", similarity, userIDInt)
 	similarities[userIDInt] = similarity
-	defer muHandle.Unlock()
+	muHandle.Unlock()
 }
 
 // Función para recomendar ítems a un usuario basado en usuarios similares

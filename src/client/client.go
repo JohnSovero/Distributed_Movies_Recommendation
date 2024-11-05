@@ -1,19 +1,26 @@
 package main
 
 import (
-    "bufio"
-    "encoding/json"
-    "fmt"
-    "math"
-    "net"
-    "os"
-    "strings"
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"math"
+	"net"
+	"os"
+	"strconv"
+	"strings"
 )
 
 const(
-    port = "9005"
+    portServer = "9005"
 )
+
 var server string
+var portClient string
+type User struct {
+	ID      int
+	Ratings map[int]float64
+}
 
 // Estructura para enviar datos al servidor
 type ToServer struct {
@@ -24,17 +31,9 @@ type ToServer struct {
 // Estructura para recibir datos del cliente
 type ClientData struct {
     User1 map[int]float64 `json:"user1"`
-    User2 map[int]float64 `json:"user2"`
-    ID    string          `json:"id"`
+    User2 map[int]User `json:"user2"`
 }
 
-func main() {
-    server = "localhost:9005"
-    fmt.Print("Enter port: ")
-    port := getUserInput()
-
-    servicioEscuchar(port)
-}
 // Maneja la conexión del cliente
 func handleClient(conn net.Conn) {
     defer conn.Close()
@@ -48,34 +47,35 @@ func handleClient(conn net.Conn) {
     // Deserializar JSON a ClientData
     var data ClientData
     json.Unmarshal([]byte(str), &data)
-
-    // Calcular similitud de coseno
-    similarity := cosineSimilarity(data.User1, data.User2)
-
-    // Enviar resultado de vuelta al servidor
-    sendToServer(similarity, data.ID)
+    
+    // Calcular similitud coseno entre los usuarios y enviar al servidor
+    for _, user := range data.User2 {
+        go func(user User) {
+            result := cosineSimilarity(data.User1, user.Ratings)
+            sendToServer(result, strconv.Itoa(user.ID))
+        }(user)
+    }
 }
 
 func servicioEscuchar(port string){
     // Configurar el cliente
-    localDir := fmt.Sprintf("localhost:%s", port)
-    ln, err := net.Listen("tcp", localDir)
+    dirClient := fmt.Sprintf("localhost:%s", port)
+    ln, err := net.Listen("tcp", dirClient)
     if err != nil {
         fmt.Println("Error al iniciar el cliente:", err)
         return
     }
     defer ln.Close()
-
-    // Aceptar conexiones entrantes
-    for {
-        conn, err := ln.Accept()
+    for { // Modo constante de escucha
+        con, err := ln.Accept()
         if err != nil {
             fmt.Println("Error al aceptar la conexión:", err)
             continue
         }
-        go handleClient(conn)
+        go handleClient(con)
     }
 }
+
 // Lee la entrada del usuario
 func getUserInput() string {
     reader := bufio.NewReader(os.Stdin)
@@ -84,7 +84,7 @@ func getUserInput() string {
 }
 
 // Función para calcular la similitud coseno entre dos usuarios
-func cosineSimilarity(user1, user2 map[int]float64) float64 {
+func cosineSimilarity(user1 map[int]float64, user2 map[int]float64) float64 {
     dotProduct := 0.0
     normA := 0.0
     normB := 0.0
@@ -96,37 +96,42 @@ func cosineSimilarity(user1, user2 map[int]float64) float64 {
             normB += rating2 * rating2
         }
     }
-
+    result := 0.0
     // Evitar división por cero
     if normA == 0 || normB == 0 {
-        return 0
+        result = 0.0
+    } else {
+        result = dotProduct / (math.Sqrt(normA) * math.Sqrt(normB))
     }
-    return dotProduct / (math.Sqrt(normA) * math.Sqrt(normB))
+    return result
 }
 
 // Envía resultados al servidor
 func sendToServer(similarity float64, userID string) {
-    for {
-        conn, err := net.Dial("tcp", server)
-        if err == nil {
-            defer conn.Close()
+    conn, err := net.Dial("tcp", server)
+    if err == nil {
+        defer conn.Close()
+        message := ToServer{
+            Similarity: similarity,
+            UserID:     userID,
+        }
 
-            message := ToServer{
-                Similarity: similarity,
-                UserID:     userID,
-            }
-
-            jsonData, err := json.Marshal(message)
-            if err != nil {
-                fmt.Println("Error marshaling to JSON:", err)
-                return
-            }
-
-            fmt.Printf("Sending JSON: %s\n", jsonData)
-            fmt.Fprintln(conn, string(jsonData))
+        jsonData, err := json.Marshal(message)
+        if err != nil {
+            fmt.Println("Error marshaling to JSON:", err)
             return
         }
-        fmt.Printf("Error connecting to server: %v. Retrying...\n", err)
+
+        fmt.Printf("Sending JSON: %s\n", jsonData)
+        fmt.Fprintln(conn, string(jsonData))
+        return
     }
+    fmt.Printf("Error connecting to server: %v. Retrying...\n", err)
 }
-//probar reintentando enviar al server
+
+func main() {
+    server = fmt.Sprintf("localhost:%s", portServer)
+    fmt.Print("Enter port: ")
+    portClient := getUserInput()
+    servicioEscuchar(portClient)
+}

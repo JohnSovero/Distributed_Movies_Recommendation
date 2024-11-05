@@ -10,9 +10,10 @@ import (
 
 func main() {
     // Leer archivo de recomendación de películas
-    ratings, err := fc.ReadRatingsFromCSV("dataset/ratings30.csv")
+    path := "dataset/ratings.csv"
+    ratings, err := fc.ReadRatingsFromCSV(path)
     if err != nil {
-        log.Fatalf("Error reading ratings from CSV: %v", err)
+        log.Fatalf("Error leyendo los ratings del csv: %v", err)
     }
 
     //Rol servidor, modo escucha
