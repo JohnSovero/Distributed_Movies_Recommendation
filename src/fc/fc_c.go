@@ -55,7 +55,7 @@ func findMostSimilarUsers(users map[int]User, userID int) []int {
 	mu.Lock()
 	group1, group2, group3 := DivideUsers(users, userID)
 	mu.Unlock()
-	
+	fmt.Printf("Cantidad de usuarios en el grupo 1: %d %d %d\n", len(group1), len(group2), len(group3))	
 	// Enviar los datos a los clientes
 	waitGroupResponses.Add(len(clientAddresses))
 	for i, group := range []map[int]User{group1, group2, group3} {
@@ -82,7 +82,7 @@ func findMostSimilarUsers(users map[int]User, userID int) []int {
 }
 // Función para manejar las conexiones de los clientes en el servidor
 func HandleClients(conn net.Conn) {
-	defer waitGroupResponses .Done()
+	defer waitGroupResponses.Done()
 	defer conn.Close()
 	
 	reader := bufio.NewReader(conn)
@@ -100,7 +100,7 @@ func HandleClients(conn net.Conn) {
 		fmt.Println("Error al deserializar JSON:", err)
 		return
 	}
-	fmt.Printf("Recibidos %d datos\n", len(message))
+	//fmt.Printf("Recibidos %d datos\n", len(message))
 
 	var mutex = &sync.Mutex{}
 	mutex.Lock()
@@ -147,16 +147,24 @@ func generateRecommendations(users map[int]User, userIndex int, numRecs int) []i
 	var recommendedItems []int
 	for i := 0; i < numRecs && i < len(sortedRecs); i++ {
 		recommendedItems = append(recommendedItems, sortedRecs[i].Key)
+		//fmt.Printf("Recomendación %d: %d\n", i+1, sortedRecs[i].Value)
 	}
 	return recommendedItems
 }
 
 // Recomienda películas a un usuario objetivo utilizando filtrado colaborativo e indica el tiempo de ejecución
-func PredictFC(users map[int]User, targetUser int, k int) {
-	start := time.Now()
+func PredictFC(users map[int]User, targetUser int, k int, movies map[int]Movie) {
 	fmt.Printf("Predicciones para el usuario %d\n", targetUser)
+	start := time.Now()
 	recommendationsFCC := generateRecommendations(users, targetUser, k)
-	fmt.Printf("Recomendaciones de filtrado colaborativo distribuido: %v\n", recommendationsFCC)
 	elapsed := time.Since(start)
+
+	var movieTitles []string
+	for _, movieID := range recommendationsFCC {
+		movieTitles = append(movieTitles, movies[movieID].Title)
+	}
+
+	fmt.Printf("Recomendaciones de filtrado colaborativo distribuido: %v\n", movieTitles)
+	fmt.Printf("Recomendaciones de filtrado colaborativo distribuido: %v\n", recommendationsFCC)
 	fmt.Printf("Tiempo de ejecución de filtrado colaborativo: %v\n", elapsed)
 }

@@ -1,5 +1,11 @@
 package fc
 
+// Movie representa una película con su ID, título y géneros
+type Movie struct {
+    MovieID int
+    Title   string
+    Genres  []string
+}
 // Rating representa una calificación de un usuario a un ítem
 type Rating struct {
     UserID int

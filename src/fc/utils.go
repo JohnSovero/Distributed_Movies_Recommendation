@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 // Leer los ratings de un archivo CSV
@@ -35,6 +36,36 @@ func ReadRatingsFromCSV(filename string) (map[int]User, error) {
 	fmt.Println("Users:", len(userMap))
 	fmt.Println("Total reviews:", len(records))
 	return userMap, nil
+}
+
+// Función para leer el CSV de películas
+func ReadMoviesFromCSV(filename string) (map[int]Movie, error) {
+    file, err := os.Open(filename)
+    if err != nil {
+        return nil, err
+    }
+    defer file.Close()
+
+    reader := csv.NewReader(file)
+    records, err := reader.ReadAll()
+    if err != nil {
+        return nil, err
+    }
+
+    movieMap := make(map[int]Movie)
+    for _, record := range records[1:] { // Saltar el encabezado
+        movieID, _ := strconv.Atoi(record[0])
+        title := record[1]
+        genres := strings.Split(record[2], "|")
+
+        movieMap[movieID] = Movie{
+            MovieID: movieID,
+            Title:   title,
+            Genres:  genres,
+        }
+    }
+    fmt.Println("Movies:", len(movieMap))
+    return movieMap, nil
 }
 
 // Función para dividir los usuarios en 3 grupos
