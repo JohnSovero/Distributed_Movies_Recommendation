@@ -18,10 +18,11 @@ var similarityScores map[int]float64
 var waitGroupResponses = sync.WaitGroup{}
 
 func sentToClient(userRatings map[int]float64, userGroups map[int]User, clientID int) {
-    for attempt  := 0; attempt  < len(clientAddresses); attempt ++ {
-		clientAddress := clientAddresses[clientID]
+    var attempts int
+    for attempts = 0; attempts < len(clientAddresses); attempts++ {
+        clientAddress := clientAddresses[clientID]
         conn, err := net.Dial("tcp", clientAddress)
-		if err == nil {
+        if err == nil {
             data := ToClientData{
                 User1: userRatings,
                 User2: userGroups,
@@ -32,20 +33,24 @@ func sentToClient(userRatings map[int]float64, userGroups map[int]User, clientID
                 fmt.Println("Error al serializar datos:", err)
                 return
             }
-			// Enviar datos al cliente
+            // Enviar datos al cliente
             _, err = fmt.Fprintln(conn, string(jsonData))
             if err != nil {
                 fmt.Println("Error al enviar datos al cliente:", err)
                 return
             }
-            // Manejar la conexión del cliente 
-			HandleClients(conn)
-			return
-        } else{
-			fmt.Printf("Error al conectar al cliente: %v. Reintentando...\n", err)
-			clientID = (clientID + 1) % len(clientAddresses)
-		}
-		fmt.Printf("Intentando con el cliente %d\n", clientID%len(clientAddresses))
+            // Manejar la conexión del cliente
+            HandleClients(conn)
+            return
+        } else {
+            fmt.Printf("Error al conectar al cliente: %v. Reintentando...\n", err)
+            clientID = (clientID + 1) % len(clientAddresses)
+        }
+        fmt.Printf("Intentando con el cliente %d\n", clientID%len(clientAddresses))
+    }
+    if attempts == len(clientAddresses) {
+		waitGroupResponses.Done()
+        fmt.Println("No hay ningún cliente activo.")
     }
 }
 
@@ -53,12 +58,17 @@ func sentToClient(userRatings map[int]float64, userGroups map[int]User, clientID
 func findMostSimilarUsers(users map[int]User, userID int) []int {
 	mu := &sync.Mutex{}
 	mu.Lock()
-	group1, group2, group3 := DivideUsers(users, userID)
+	groups := DivideUsers(users, userID, len(clientAddresses))
 	mu.Unlock()
-	fmt.Printf("Cantidad de usuarios en el grupo 1: %d %d %d\n", len(group1), len(group2), len(group3))	
+
+	 // Imprimir la cantidad de usuarios en cada grupo
+	for i, group := range groups {
+        fmt.Printf("Cantidad de usuarios en el grupo %d: %d\n", i+1, len(group))
+    }
+
 	// Enviar los datos a los clientes
 	waitGroupResponses.Add(len(clientAddresses))
-	for i, group := range []map[int]User{group1, group2, group3} {
+	for i, group := range groups {
 		go func (group map[int]User, i int) {
 			sentToClient(users[userID].Ratings, group, i%len(clientAddresses))
 		}(group, i)
@@ -80,6 +90,7 @@ func findMostSimilarUsers(users map[int]User, userID int) []int {
 	}
 	return mostSimilar
 }
+
 // Función para manejar las conexiones de los clientes en el servidor
 func HandleClients(conn net.Conn) {
 	defer waitGroupResponses.Done()
@@ -104,11 +115,11 @@ func HandleClients(conn net.Conn) {
 
 	var mutex = &sync.Mutex{}
 	mutex.Lock()
+	defer mutex.Unlock()
 	for _, data := range message {
 		userId, _ := strconv.Atoi(data.UserID)
 		similarityScores[userId] = data.Similarity
 	}
-	mutex.Unlock()
 }
 
 // Función para recomendar ítems a un usuario basado en usuarios similares

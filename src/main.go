@@ -12,8 +12,8 @@ import (
 
 func main() {
     // Leer archivo de recomendación de películas
-    pathRatings := "dataset/ratings30.csv"
-    pathMovies := "dataset/movies.csv"
+    pathRatings := "dataset/ratings25.csv"
+    pathMovies := "dataset/movies25.csv"
     ratings, err := fc.ReadRatingsFromCSV(pathRatings)
     if err != nil {
         log.Fatalf("Error leyendo los ratings del csv: %v", err)

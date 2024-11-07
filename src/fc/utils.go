@@ -69,19 +69,19 @@ func ReadMoviesFromCSV(filename string) (map[int]Movie, error) {
 }
 
 // Función para dividir los usuarios en 3 grupos
-func DivideUsers(users map[int]User, userId int) (map[int]User, map[int]User, map[int]User) {
-    group1 := make(map[int]User)
-    group2 := make(map[int]User)
-    group3 := make(map[int]User)
+func DivideUsers(users map[int]User, userId int, numGroups int) []map[int]User {
+    groups := make([]map[int]User, numGroups)
+    for i := range groups {
+        groups[i] = make(map[int]User)
+    }
 
-    groups := []map[int]User{group1, group2, group3}
     currentGroup := 0
 
     for id, user := range users {
-		if user.ID != userId{
-			groups[currentGroup][id] = user
-        	currentGroup = (currentGroup + 1) % 3
-		}
+        if user.ID != userId {
+            groups[currentGroup][id] = user
+            currentGroup = (currentGroup + 1) % numGroups
+        }
     }
-    return group1, group2, group3
+    return groups
 }
