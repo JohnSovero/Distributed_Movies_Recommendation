@@ -45,9 +45,9 @@ func handleConnection(conn net.Conn) {
 	var serverData ServerData
 	err = json.Unmarshal([]byte(input), &serverData)
 	if err != nil {
-        log.Println("Error deserializando datos:", err)
-        return
-    }
+		log.Println("Error deserializando datos:", err)
+		return
+	}
 	var similarityResults []SimilarityData
 
 	// Calcular similitud coseno entre los usuarios y preparar datos para el servidor
@@ -57,7 +57,7 @@ func handleConnection(conn net.Conn) {
 	for _, user := range serverData.OtherUsers {
 		go func(user User) {
 			defer wg.Done()
-			//fmt.Printf("Calculando similitud para usuario %d\n", user.ID)
+			fmt.Printf("Calculando similitud para usuario %d\n", user.ID)
 			similarity := calculateCosineSimilarity(serverData.MainUserRatings, user.Ratings)
 			mu.Lock()
 			similarityResults = append(similarityResults, SimilarityData{
@@ -111,7 +111,7 @@ func calculateCosineSimilarity(ratings1 map[int]float64, ratings2 map[int]float6
 			sumSquares1 += rating1 * rating1
 			sumSquares2 += rating2 * rating2
 		}
-		
+
 	}
 
 	if sumSquares1 == 0 || sumSquares2 == 0 {
@@ -128,7 +128,7 @@ func sendSimilarityResults(similarityData []SimilarityData, conn net.Conn) {
 		log.Println("Error al serializar datos:", err)
 		return
 	}
-	//fmt.Printf("Enviando datos al servidor: %s\n", string(jsonData))
+	fmt.Printf("Enviando datos al servidor: %s\n", string(jsonData))
 	fmt.Fprintln(conn, string(jsonData))
 }
 
