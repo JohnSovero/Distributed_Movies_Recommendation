@@ -16,6 +16,7 @@ import (
 var clientAddresses = []string{"localhost:8000", "localhost:8001", "localhost:8002"}
 var similarityScores map[int]float64
 var waitGroupResponses = sync.WaitGroup{}
+var mutex = &sync.Mutex{}
 
 func sentToClient(userRatings map[int]float64, userGroups map[int]User, clientID int) {
     var attempts int
@@ -54,8 +55,8 @@ func sentToClient(userRatings map[int]float64, userGroups map[int]User, clientID
     }
 }
 
-// Función para encontrar los usuarios más similares a un usuario dado
-func findMostSimilarUsers(users map[int]User, userID int) []int {
+// Función para encontrar las similaridades entre un usuario y los demás
+func findSimilarUsers(users map[int]User, userID int) map[int]float64 {
 	mu := &sync.Mutex{}
 	mu.Lock()
 	groups := DivideUsers(users, userID, len(clientAddresses))
@@ -65,7 +66,8 @@ func findMostSimilarUsers(users map[int]User, userID int) []int {
 	for i, group := range groups {
         fmt.Printf("Cantidad de usuarios en el grupo %d: %d\n", i+1, len(group))
     }
-
+	// Inicializar el mapa similarityScores
+    similarityScores = make(map[int]float64)
 	// Enviar los datos a los clientes
 	waitGroupResponses.Add(len(clientAddresses))
 	for i, group := range groups {
@@ -76,19 +78,7 @@ func findMostSimilarUsers(users map[int]User, userID int) []int {
 	waitGroupResponses.Wait()
 	fmt.Printf("Cantidad de similaridades con usuarios calculadas: %d\n", len(similarityScores))
 
-	// Ordenar los usuarios por similitud y devolver los más similares
-	var sortedSimilarities []kv
-	for k, v := range similarityScores {
-		sortedSimilarities = append(sortedSimilarities, kv{k, v})
-	}
-	sort.Slice(sortedSimilarities, func(i, j int) bool {
-		return sortedSimilarities[i].Value > sortedSimilarities[j].Value
-	})
-	var mostSimilar []int
-	for _, pair := range sortedSimilarities {
-		mostSimilar = append(mostSimilar, pair.Key)
-	}
-	return mostSimilar
+	return similarityScores
 }
 
 // Función para manejar las conexiones de los clientes en el servidor
@@ -113,36 +103,39 @@ func HandleClients(conn net.Conn) {
 	}
 	//fmt.Printf("Recibidos %d datos\n", len(message))
 
-	var mutex = &sync.Mutex{}
 	mutex.Lock()
 	defer mutex.Unlock()
 	for _, data := range message {
 		userId, _ := strconv.Atoi(data.UserID)
 		similarityScores[userId] = data.Similarity
 	}
+
 }
 
 // Función para recomendar ítems a un usuario basado en usuarios similares
 func generateRecommendations(users map[int]User, userIndex int, numRecs int) []int {
-	similarityScores = make(map[int]float64)
-	similarUsers := findMostSimilarUsers(users, userIndex)
+	similarityUsersScores  := findSimilarUsers(users, userIndex)
 	recommendations := make(map[int]float64)
 
 	var wg sync.WaitGroup
 	var mutex = &sync.Mutex{}
 
-	for _, similarUser := range similarUsers {
+	for similarUserID, similarity  := range similarityUsersScores  {
 		wg.Add(1)
-		go func(similarUser int) {
+		go func(similarUserID int, similarity float64) {
 			defer wg.Done()
-			for itemID, rating := range users[similarUser].Ratings {
-				if _, exists := users[userIndex].Ratings[itemID]; !exists {
+
+			// Iterar sobre las calificaciones del usuario similar
+			for itemID, rating := range users[similarUserID].Ratings {
+				if _, exists := users[userIndex].Ratings[itemID]; !exists { // Si el usuario principal no ha calificado el ítem
 					mutex.Lock()
-					recommendations[itemID] += rating
+					// Ponderamos el rating por la similitud entre el usuario principal y el usuario similar
+					weightedRating := rating * similarity
+					recommendations[itemID] += weightedRating
 					mutex.Unlock()
 				}
 			}
-		}(similarUser)
+		}(similarUserID, similarity)
 	}
 	wg.Wait()
 
@@ -158,7 +151,6 @@ func generateRecommendations(users map[int]User, userIndex int, numRecs int) []i
 	var recommendedItems []int
 	for i := 0; i < numRecs && i < len(sortedRecs); i++ {
 		recommendedItems = append(recommendedItems, sortedRecs[i].Key)
-		//fmt.Printf("Recomendación %d: %d\n", i+1, sortedRecs[i].Value)
 	}
 	return recommendedItems
 }
