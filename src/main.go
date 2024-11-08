@@ -44,8 +44,8 @@ func main() {
 		fmt.Println("\nMenú de opciones: ------------")
 		fmt.Println()
 		fmt.Println("\t1. Ingresar ID del usuario")
-		fmt.Println("\t2. Predecir recomendaciones")
-		fmt.Println("\t3. Indicar cuántas películas recomendar")
+		fmt.Println("\t2. Indicar cuántas películas recomendar")
+		fmt.Println("\t3. Predecir recomendaciones")
 		fmt.Println("\t4. Salir")
 		fmt.Println()
 		fmt.Println("--------------------------------")
@@ -72,13 +72,6 @@ func main() {
 				time.Sleep(1 * time.Second)
 			}
 		case 2:
-			if userId == -1 {
-				fmt.Println("Primero debe ingresar un ID de usuario válido.")
-				time.Sleep(1 * time.Second)
-			} else {
-				fc.PredictFC(ratings, userId, numRecommendations, movies)
-			}
-		case 3:
 			fmt.Print("Ingrese el número de películas a recomendar: ")
 			numRecsStr, _ := reader.ReadString('\n')
 			numRecsStr = strings.TrimSpace(numRecsStr)
@@ -87,6 +80,13 @@ func main() {
 				fmt.Println("Número de recomendaciones inválido. Usando valor por defecto (5).")
 				numRecommendations = 5
 				time.Sleep(1 * time.Second)
+			}
+		case 3:
+			if userId == -1 {
+				fmt.Println("Primero debe ingresar un ID de usuario válido.")
+				time.Sleep(1 * time.Second)
+			} else {
+				fc.PredictFC(ratings, userId, numRecommendations, movies)
 			}
 		case 4:
 			fmt.Println("Saliendo...")
