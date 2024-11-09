@@ -1,5 +1,5 @@
 # Distributed_Movies_Recommendation
-PC4 y TF del curso de Programacion Concurrente y Distribuida
+PC4 del curso de Programacion Concurrente y Distribuida
 
 Dataset: https://grouplens.org/datasets/movielens/25m/
 
