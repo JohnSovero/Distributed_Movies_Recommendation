@@ -7,3 +7,7 @@ Dataset: https://grouplens.org/datasets/movielens/25m/
 - Luego ejecutar el main.go con el comando "go run main.go" y los clientes con "go run client.go", situándose en la ruta correspondiente para cada uno.
 - Los datasets subidos al repositorio son de ejemplo ya que github no permite archivos csv de 660 MB
 - No olvidar renombrar el archivo movies.csv como movies25.csv y ratings.csv como ratings25.csv
+
+Integrantes:
+- André Darío Pilco Chiuyare
+- John Davids Sovero Cubillas
