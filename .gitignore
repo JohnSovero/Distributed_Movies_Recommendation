@@ -23,5 +23,4 @@ go.work.sum
 
 # env file
 .env
-/src/dataset/ml-32m
-/src/test
+*csv
