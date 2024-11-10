@@ -1,12 +1,16 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"strconv"
 	"sync"
+
+	"github.com/gorilla/mux"
 )
 
 func getAllMovies(resp http.ResponseWriter, req *http.Request) {
@@ -25,8 +29,9 @@ func getAllUsers(resp http.ResponseWriter, req *http.Request) {
 
 func getMovieByID(resp http.ResponseWriter, req *http.Request) {
 	resp.Header().Set("Content-Type", "application/json")
-	id := req.URL.Path[len("/movie/"):]
-	log.Println("Calling getMovieByID")
+	vars := mux.Vars(req)
+	id := vars["id"]
+
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	found := false
@@ -56,12 +61,47 @@ func getMovieByID(resp http.ResponseWriter, req *http.Request) {
 func getRecommendations(resp http.ResponseWriter, req *http.Request) {
 	resp.Header().Set("Content-Type", "application/json")
 	log.Println("Calling getRecommendations")
+	vars := mux.Vars(req)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(resp, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+	numRec, err := strconv.Atoi(vars["numRec"])
+	if err != nil {
+		http.Error(resp, "Invalid number of recommendations", http.StatusBadRequest)
+		return
+	}
 
-	// create a dial to connect to the server
 	conn, err := net.Dial("tcp", "localhost:9000")
 	if err != nil {
 		http.Error(resp, "Error connecting to the server", http.StatusInternalServerError)
 		return
 	}
 	defer conn.Close()
+
+	// create recommendation request with user id and number of recommendations
+	recReq := RecommendationRequest{
+		UserID: id,
+		NumRec: numRec,
+	}
+
+	requestToServer, error := json.Marshal(recReq)
+	requestToServerStr := string(requestToServer)
+
+	if error != nil {
+		http.Error(resp, "Error creating request", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintln(conn, requestToServerStr)
+
+	bf := bufio.NewReader(conn)
+	moviesRec, error := bf.ReadString('\n')
+	if error != nil {
+		http.Error(resp, "Error reading response", http.StatusInternalServerError)
+		return
+	}
+	jsonBytes, _ := json.MarshalIndent(moviesRec, "", "  ")
+	resp.Write(jsonBytes)
 }

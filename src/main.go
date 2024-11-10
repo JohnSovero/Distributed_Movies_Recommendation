@@ -3,13 +3,18 @@ package main
 import (
 	"PC4/fc"
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
-	"os"
 )
 
-func serverStartListening(port string) {
+type RecommendationRequest struct {
+	UserID int `json:"userID"`
+	NumRec int `json:"numRec"`
+}
+
+func serverStartListening(port string, ratings map[int]fc.User) {
 	address := "localhost:" + port
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
@@ -24,11 +29,11 @@ func serverStartListening(port string) {
 			log.Println("Error al aceptar conexión:", err)
 			continue
 		}
-		go serverHandleConnection(conn)
+		go serverHandleConnection(conn, ratings)
 	}
 }
 
-func serverHandleConnection(conn net.Conn) {
+func serverHandleConnection(conn net.Conn, ratings map[int]fc.User) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 	for {
@@ -37,14 +42,27 @@ func serverHandleConnection(conn net.Conn) {
 			log.Println("Error al leer mensaje:", err)
 			return
 		}
-		fmt.Println("Mensaje recibido:", message)
+		var body RecommendationRequest
+		json.Unmarshal([]byte(message), &body)
+
+		fmt.Println("Mensaje recibido:", body)
+
+		recommendations := fc.GenerateRecommendations(ratings, body.UserID, body.NumRec)
+
+		recommendationsJSON, err := json.Marshal(recommendations)
+		if err != nil {
+			log.Println("Error al serializar recomendaciones:", err)
+			return
+		}
+
+		fmt.Fprintln(conn, string(recommendationsJSON))
 	}
 }
 
 func main() {
 	// Leer archivo de recomendación de películas
 	pathRatings := "dataset/ratings25.csv"
-	pathMovies := "dataset/movies25.csv"
+	// pathMovies := "dataset/movies25.csv"
 	fmt.Println("\nLeyendo archivos de datos...")
 	fmt.Println("--------------------------------")
 	fmt.Println("Detalle de la información procesada:")
@@ -52,17 +70,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error leyendo los ratings del csv: %v", err)
 	}
-	movies, err := fc.ReadMoviesFromCSV(pathMovies)
-	if err != nil {
-		log.Fatalf("Error leyendo las películas del csv: %v", err)
-	}
+	// movies, err := fc.ReadMoviesFromCSV(pathMovies)
+	// if err != nil {
+	// 	log.Fatalf("Error leyendo las películas del csv: %v", err)
+	// }
 
-	var userId int = -1
-	var numRecommendations int = 5 // Valor por defecto
-	reader := bufio.NewReader(os.Stdin)
+	// var userId int = -1
+	// var numRecommendations int = 5 // Valor por defecto
+	// reader := bufio.NewReader(os.Stdin)
 
-	serverPort := "9015"
-	startListening(serverPort)
+	fmt.Println("Escuchando")
+	serverPort := "9000"
+	serverStartListening(serverPort, ratings)
 
 	// for {
 	// 	fmt.Println("--------------------------------")

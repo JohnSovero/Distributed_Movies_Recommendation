@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 type Movie struct {
@@ -14,15 +16,28 @@ type Movie struct {
 	TMDBLink string   `json:"tmdb_link"`
 }
 
+type RecommendationRequest struct {
+	UserID int `json:"userID"`
+	NumRec int `json:"numRec"`
+}
+
 var users []int
 var movies []Movie
 
 func defineEndpoints() {
-	http.HandleFunc("/movies/", getAllMovies)
-	http.HandleFunc("/users/", getAllUsers)
-	http.HandleFunc("/movie/", getMovieByID)
+	router := mux.NewRouter()
 
-	log.Fatal(http.ListenAndServe(":9015", nil))
+	// http.HandleFunc("/movies/", getAllMovies)
+	// http.HandleFunc("/users/", getAllUsers)
+	// http.HandleFunc("/movie/", getMovieByID)
+	// http.HandleFunc("recommendations/", getRecommendations)
+
+	router.HandleFunc("/movies/", getAllMovies).Methods("GET")
+	router.HandleFunc("/users/", getAllUsers).Methods("GET")
+	router.HandleFunc("/movies/{id}", getMovieByID).Methods("GET")
+	router.HandleFunc("/recommendations/{numRec}/users/{id}", getRecommendations).Methods("GET")
+
+	log.Fatal(http.ListenAndServe(":9015", router))
 }
 
 func main() {
