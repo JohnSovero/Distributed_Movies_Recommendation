@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 )
 
 type Movie struct {
@@ -24,18 +25,19 @@ type RecommendationRequest struct {
 var users []int
 var movies []Movie
 
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true // Cambiar esto para mayor seguridad en producción
+	},
+}
+
 func defineEndpoints() {
 	router := mux.NewRouter()
 
-	// http.HandleFunc("/movies/", getAllMovies)
-	// http.HandleFunc("/users/", getAllUsers)
-	// http.HandleFunc("/movie/", getMovieByID)
-	// http.HandleFunc("recommendations/", getRecommendations)
-
-	router.HandleFunc("/movies/", getAllMovies).Methods("GET")
-	router.HandleFunc("/users/", getAllUsers).Methods("GET")
+	router.HandleFunc("/movies", getAllMovies).Methods("GET")
+	router.HandleFunc("/users", getAllUsers).Methods("GET")
 	router.HandleFunc("/movies/{id}", getMovieByID).Methods("GET")
-	router.HandleFunc("/recommendations/{numRec}/users/{id}", getRecommendations).Methods("GET")
+	router.HandleFunc("/recommendations/{numRec}/users/{id}", getRecommendationsWS)
 
 	log.Fatal(http.ListenAndServe(":9015", router))
 }

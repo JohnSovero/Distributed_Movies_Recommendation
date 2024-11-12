@@ -11,13 +11,19 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 )
 
 func getAllMovies(resp http.ResponseWriter, req *http.Request) {
-	resp.Header().Set("Content-Type", "application/json")
-	jsonBytes, _ := json.MarshalIndent(movies, "", "  ")
-	resp.Write(jsonBytes)
 	log.Println("Calling getAllMovies")
+	resp.Header().Set("Content-Type", "application/json")
+	jsonBytes, err := json.MarshalIndent(movies, "", "  ")
+	if err != nil {
+		http.Error(resp, "Error serializing movies", http.StatusInternalServerError)
+		return
+	}
+	resp.Write(jsonBytes)
+	log.Println("getAllMovies called")
 }
 
 func getAllUsers(resp http.ResponseWriter, req *http.Request) {
@@ -58,9 +64,7 @@ func getMovieByID(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func getRecommendations(resp http.ResponseWriter, req *http.Request) {
-	resp.Header().Set("Content-Type", "application/json")
-	log.Println("Calling getRecommendations")
+func getRecommendationsWS(resp http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -73,35 +77,41 @@ func getRecommendations(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	conn, err := net.Dial("tcp", "localhost:9000")
+	// Updating a WebSocket
+	conn, err := upgrader.Upgrade(resp, req, nil)
 	if err != nil {
-		http.Error(resp, "Error connecting to the server", http.StatusInternalServerError)
+		log.Println("Error upgrading to websocket:", err)
 		return
 	}
 	defer conn.Close()
 
-	// create recommendation request with user id and number of recommendations
-	recReq := RecommendationRequest{
-		UserID: id,
-		NumRec: numRec,
+	// Connecting to the server
+	tcpConn, err := net.Dial("tcp", "localhost:9000")
+	if err != nil {
+		log.Println("Error connecting to recommendation server:", err)
+		conn.WriteMessage(websocket.TextMessage, []byte("Error connecting to recommendation server"))
+		return
 	}
+	defer tcpConn.Close()
 
-	requestToServer, error := json.Marshal(recReq)
-	requestToServerStr := string(requestToServer)
-
-	if error != nil {
-		http.Error(resp, "Error creating request", http.StatusInternalServerError)
+	recReq := RecommendationRequest{UserID: id, NumRec: numRec}
+	requestToServer, err := json.Marshal(recReq)
+	if err != nil {
+		conn.WriteMessage(websocket.TextMessage, []byte("Error creating request"))
 		return
 	}
 
-	fmt.Fprintln(conn, requestToServerStr)
+	// Send the request to the server
+	fmt.Fprintln(tcpConn, string(requestToServer))
 
-	bf := bufio.NewReader(conn)
-	moviesRec, error := bf.ReadString('\n')
-	if error != nil {
-		http.Error(resp, "Error reading response", http.StatusInternalServerError)
+	// Reading the response from the server
+	bf := bufio.NewReader(tcpConn)
+	moviesRec, err := bf.ReadString('\n')
+	if err != nil {
+		conn.WriteMessage(websocket.TextMessage, []byte("Error reading response"))
 		return
 	}
-	jsonBytes, _ := json.MarshalIndent(moviesRec, "", "  ")
-	resp.Write(jsonBytes)
+
+	// Send the response to the client
+	conn.WriteMessage(websocket.TextMessage, []byte(moviesRec))
 }

@@ -57,7 +57,7 @@ func handleConnection(conn net.Conn) {
 	for _, user := range serverData.OtherUsers {
 		go func(user User) {
 			defer wg.Done()
-			fmt.Printf("Calculando similitud para usuario %d\n", user.ID)
+			// fmt.Printf("Calculando similitud para usuario %d\n", user.ID)
 			similarity := calculateCosineSimilarity(serverData.MainUserRatings, user.Ratings)
 			mu.Lock()
 			similarityResults = append(similarityResults, SimilarityData{
@@ -128,7 +128,7 @@ func sendSimilarityResults(similarityData []SimilarityData, conn net.Conn) {
 		log.Println("Error al serializar datos:", err)
 		return
 	}
-	fmt.Printf("Enviando datos al servidor: %s\n", string(jsonData))
+	// fmt.Printf("Enviando datos al servidor: %s\n", string(jsonData))
 	fmt.Fprintln(conn, string(jsonData))
 }
 
