@@ -114,7 +114,7 @@ func HandleClients(conn net.Conn) {
 }
 
 // Función para recomendar ítems a un usuario basado en usuarios similares
-func generateRecommendations(users map[int]User, userIndex int, numRecs int) []int {
+func GenerateRecommendations(users map[int]User, userIndex int, numRecs int) []int {
 	similarityUsersScores := findSimilarUsers(users, userIndex)
 	recommendations := make(map[int]float64)
 
@@ -160,7 +160,7 @@ func generateRecommendations(users map[int]User, userIndex int, numRecs int) []i
 func PredictFC(users map[int]User, targetUser int, k int, movies map[int]Movie) {
 	fmt.Printf("\nPredicciones para el usuario %d\n", targetUser)
 	start := time.Now()
-	recommendationsFCC := generateRecommendations(users, targetUser, k)
+	recommendationsFCC := GenerateRecommendations(users, targetUser, k)
 	elapsed := time.Since(start)
 
 	var movieTitles []string
