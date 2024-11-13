@@ -48,7 +48,7 @@ func serverHandleConnection(conn net.Conn, ratings map[int]types.User) {
 			log.Println("Error al leer mensaje:", err)
 			return
 		}
-		fmt.Println("Mensaje recibido:", message)
+
 		var body RecommendationRequest
 		json.Unmarshal([]byte(message), &body)
 
