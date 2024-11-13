@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"backend/types"
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types"
 )
 
 // Leer los ratings de un archivo CSV
