@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types"
 )
 
 // Variables globales

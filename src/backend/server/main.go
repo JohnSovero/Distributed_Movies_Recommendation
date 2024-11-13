@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
-    "github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types"
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types"
 )
 
 type RecommendationRequest struct {
