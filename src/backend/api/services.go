@@ -73,6 +73,7 @@ func getRecommendations(resp http.ResponseWriter, req *http.Request) {
 		http.Error(resp, "Invalid number of recommendations", http.StatusBadRequest)
 		return
 	}
+	genre := vars["genre"]
 
 	conn, err := net.Dial("tcp", "localhost:9000")
 	if err != nil {
@@ -111,11 +112,69 @@ func getRecommendations(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// recommendations have the ids of the movies, concurrently get the movies and only save the ones with the genre
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var moviesGenre []Movie
+
+	for _, movieID := range recommendations {
+		wg.Add(1)
+		go func(movieID int) {
+			defer wg.Done()
+			for _, movie := range movies {
+				if movie.MovieID == movieID {
+					// Check if the genre exists in the movie's genres list
+					for _, g := range movie.Genres {
+						if g == genre {
+							mu.Lock() // Lock before modifying shared resource
+							moviesGenre = append(moviesGenre, movie)
+							mu.Unlock() // Unlock after modifying shared resource
+							break       // No need to check other genres if we found the match
+						}
+					}
+				}
+			}
+		}(movieID)
+	}
+
+	wg.Wait() // Wait for all goroutines to finish
+
 	// Send the recommendations back as JSON
-	respBytes, err := json.Marshal(recommendations)
+	// respBytes, err := json.Marshal(recommendations)
+	respBytes, err := json.MarshalIndent(moviesGenre, "", "  ")
 	if err != nil {
 		http.Error(resp, "Error serializing recommendations", http.StatusInternalServerError)
 		return
 	}
 	resp.Write(respBytes)
 }
+
+// func wsGetAboveAverageRecommendations(resp http.ResponseWriter, req *http.Request) {
+// 	log.Println("Calling wsGetAboveAverageRecommendations")
+// 	// Upgrade the HTTP connection to a WebSocket
+// 	conn, err := upgrader.Upgrade(resp, req, nil)
+// 	if err != nil {
+// 		log.Println("Error upgrading connection to WebSocket:", err)
+// 		return
+// 	}
+// 	defer conn.Close()
+
+// 	// Create a message to send to the server
+// 	msg := []byte("above_average")
+// 	err = conn.WriteMessage(websocket.TextMessage, msg)
+// 	if err != nil {
+// 		log.Println("Error writing message to WebSocket:", err)
+// 		return
+// 	}
+
+// 	// Read the response from the server
+// 	_, respMsg, err := conn.ReadMessage()
+// 	if err != nil {
+// 		log.Println("Error reading message from WebSocket:", err)
+// 		return
+// 	}
+
+// 	// Send the response back to the client
+// 	resp.Write(respMsg)
+// 	log.Println("wsGetAboveAverageRecommendations called")
+// }

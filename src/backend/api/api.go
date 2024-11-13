@@ -24,6 +24,14 @@ type RecommendationRequest struct {
 var users []int
 var movies []Movie
 
+// Configuración del actualizador de WebSocket
+// var upgrader = websocket.Upgrader{
+// 	CheckOrigin: func(r *http.Request) bool {
+// 		return true // Cambiar esto para mayor seguridad en producción
+// 	},
+// }
+
+// Función para definir los endpoints de la API
 func defineEndpoints() {
 	router := mux.NewRouter()
 
@@ -35,12 +43,17 @@ func defineEndpoints() {
 	router.HandleFunc("/movies", getAllMovies).Methods("GET")
 	router.HandleFunc("/users", getAllUsers).Methods("GET")
 	router.HandleFunc("/movies/{id}", getMovieByID).Methods("GET")
-	router.HandleFunc("/recommendations/{numRec}/users/{id}", getRecommendations).Methods("GET")
+	// Endpoint para obtener recomendaciones
+	router.HandleFunc("/recommendations/{numRec}/genre/{genre}/users/{id}", getRecommendations).Methods("GET")
+	// Endpoint para obtener recomendaciones arriba del promedio usando WebSocket
+	// router.HandleFunc("/recommendations/above-average", wsGetAboveAverageRecommendations)
 
 	log.Fatal(http.ListenAndServe(":9015", router))
 }
 
 func main() {
+	loadData()        // Cargar datos iniciales
+	defineEndpoints() // Definir los endpoints de la API
 	loadData()
 	defineEndpoints()
 }

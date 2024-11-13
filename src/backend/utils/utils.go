@@ -23,8 +23,8 @@ func ReadRatingsFromCSV(filename string) (map[int]types.User, error) {
 		return nil, err
 	}
 
-	userMap := make(map[int]types.User)         // Cambiado a un mapa
-	for _, record := range records[1:] { 		// Saltar el encabezado
+	userMap := make(map[int]types.User)  // Cambiado a un mapa
+	for _, record := range records[1:] { // Saltar el encabezado
 		userID, _ := strconv.Atoi(record[0])
 		itemID, _ := strconv.Atoi(record[1])
 		score, _ := strconv.ParseFloat(record[2], 64)
