@@ -54,8 +54,15 @@ func serverHandleConnection(conn net.Conn, ratings map[int]types.User, movies ma
 		json.Unmarshal([]byte(message), &body)
 
 		fmt.Println("Mensaje recibido:", body)
+		fmt.Println("Genre received", body.Genre)
 
-		recommendations := model.GenerateRecommendations(ratings, body.UserID, body.NumRec, movies, body.Genre)
+		var recommendations []types.Movie
+
+		if body.Genre == "All" {
+			recommendations = model.GenerateRecommendationsAboveAverage(ratings, body.UserID, movies, body.NumRec)
+		} else {
+			recommendations = model.GenerateRecommendationsByGenre(ratings, body.UserID, body.NumRec, movies, body.Genre)
+		}
 
 		recommendationsJSON, err := json.Marshal(recommendations)
 		if err != nil {

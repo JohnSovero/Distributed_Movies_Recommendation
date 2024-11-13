@@ -5,14 +5,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 )
+
+// Global WebSocket Upgrader
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool { return true },
+}
 
 func getAllMovies(resp http.ResponseWriter, req *http.Request) {
 	resp.Header().Set("Content-Type", "application/json")
@@ -122,32 +130,62 @@ func getRecommendations(resp http.ResponseWriter, req *http.Request) {
 	resp.Write(respBytes)
 }
 
-// func wsGetAboveAverageRecommendations(resp http.ResponseWriter, req *http.Request) {
-// 	log.Println("Calling wsGetAboveAverageRecommendations")
-// 	// Upgrade the HTTP connection to a WebSocket
-// 	conn, err := upgrader.Upgrade(resp, req, nil)
-// 	if err != nil {
-// 		log.Println("Error upgrading connection to WebSocket:", err)
-// 		return
-// 	}
-// 	defer conn.Close()
+// Helper function to send the "above average" recommendation request to the server
+func sendAboveAverageRequest(conn *websocket.Conn, userID int) {
+	// Dial the TCP server
+	tcpConn, err := net.Dial("tcp", "localhost:9000")
+	if err != nil {
+		log.Println("Error connecting to TCP server:", err)
+		return
+	}
+	defer tcpConn.Close()
 
-// 	// Create a message to send to the server
-// 	msg := []byte("above_average")
-// 	err = conn.WriteMessage(websocket.TextMessage, msg)
-// 	if err != nil {
-// 		log.Println("Error writing message to WebSocket:", err)
-// 		return
-// 	}
+	// Prepare request data for "above average" recommendations
+	req := RecommendationRequest{
+		UserID: userID,
+		NumRec: 5, // or any number you want to set for recommendations
+		Genre:  "All",
+	}
+	reqBytes, _ := json.Marshal(req)
+	fmt.Fprintln(tcpConn, string(reqBytes)) // Send request to the server
 
-// 	// Read the response from the server
-// 	_, respMsg, err := conn.ReadMessage()
-// 	if err != nil {
-// 		log.Println("Error reading message from WebSocket:", err)
-// 		return
-// 	}
+	// Receive and parse the server's response
+	reader := bufio.NewReader(tcpConn)
+	respData, _ := reader.ReadString('\n')
+	respData = strings.TrimSpace(respData)
 
-// 	// Send the response back to the client
-// 	resp.Write(respMsg)
-// 	log.Println("wsGetAboveAverageRecommendations called")
-// }
+	// Parse response and send it over WebSocket
+	var recommendations []Movie
+	if err := json.Unmarshal([]byte(respData), &recommendations); err == nil {
+		conn.WriteJSON(recommendations)
+	} else {
+		log.Println("Error parsing server response:", err)
+	}
+}
+
+// wsGetAboveAverageRecommendations is called whenever a new WebSocket connection is established
+func wsGetAboveAverageRecommendations(resp http.ResponseWriter, req *http.Request) {
+	// Upgrade HTTP to WebSocket
+	conn, err := upgrader.Upgrade(resp, req, nil)
+	if err != nil {
+		log.Println("Error upgrading to WebSocket:", err)
+		return
+	}
+	defer conn.Close()
+
+	// Assign a random user ID
+	userID := rand.Intn(10)
+	log.Printf("Assigned User ID: %d", userID)
+
+	// Send initial request
+	sendAboveAverageRequest(conn, userID)
+
+	// Set up a ticker to send requests every minute
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		// Send request every minute
+		sendAboveAverageRequest(conn, userID)
+	}
+}

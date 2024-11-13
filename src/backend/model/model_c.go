@@ -121,10 +121,10 @@ func HandleClients(conn net.Conn) {
 }
 
 // Generate recommendations and return the ones with the score above average (i want all, not specifying the number)
-func GenerateRecommendationsAboveAverage(users map[int]types.User, userIndex int) []int {
+func GenerateRecommendationsAboveAverage(users map[int]types.User, userIndex int, movies map[int]types.Movie, numRecs int) []types.Movie {
 	similarityUsersScores := findSimilarUsers(users, userIndex)
 	recommendations := make(map[int]float64)
-	averageWeightedRating := 0.0
+	sumWeightedRating := 0.0
 
 	var wg sync.WaitGroup
 	var mutex = &sync.Mutex{}
@@ -140,7 +140,7 @@ func GenerateRecommendationsAboveAverage(users map[int]types.User, userIndex int
 					mutex.Lock()
 					// Ponderamos el rating por la similitud entre el usuario principal y el usuario similar
 					weightedRating := rating * similarity
-					averageWeightedRating += weightedRating
+					sumWeightedRating += weightedRating
 					recommendations[itemID] += weightedRating
 					mutex.Unlock()
 				}
@@ -149,36 +149,32 @@ func GenerateRecommendationsAboveAverage(users map[int]types.User, userIndex int
 	}
 	wg.Wait()
 
-	// Ordenar las recomendaciones por las calificaciones acumuladas
-	var aboveAvgRecs []int
-	for k, v := range recommendations {
-		if v > averageWeightedRating {
-			aboveAvgRecs = append(aboveAvgRecs, k)
-		}
+	// compute average rating
+	averageRating := sumWeightedRating / float64(len(recommendations))
+
+	var wg2 sync.WaitGroup
+	var mu sync.Mutex
+	var recommendedMovies []types.Movie
+
+	// get the movies with the weighted rating above average
+	for movieID, rating := range recommendations {
+		wg2.Add(1)
+		go func(movieID int, rating float64) {
+			defer wg2.Done()
+			if rating > averageRating {
+				mu.Lock() // Lock before modifying shared resource
+				recommendedMovies = append(recommendedMovies, movies[movieID])
+				mu.Unlock() // Unlock after modifying shared resource
+			}
+		}(movieID, rating)
 	}
-	return aboveAvgRecs
+	wg2.Wait() // Wait for all goroutines to finish
 
-	// var sortedRecs []types.Kv
-	// for k, v := range recommendations {
-	// 	sortedRecs = append(sortedRecs, types.Kv{Key: k, Value: v})
-	// }
-	// sort.Slice(sortedRecs, func(i, j int) bool {
-	// 	return sortedRecs[i].Value > sortedRecs[j].Value
-	// })
-
-	// var recommendedItems []int
-	// for i := 0; i < len(recommendations); i++ {
-	// 	if sortedRecs[i].Value > averageWeightedRating {
-	// 		recommendedItems = append(recommendedItems, sortedRecs[i].Key)
-	// 	} else {
-	// 		break
-	// 	}
-	// }
-	// return recommendedItems
+	return recommendedMovies[:numRecs]
 }
 
 // Función para recomendar ítems a un usuario basado en usuarios similares
-func GenerateRecommendations(users map[int]types.User, userIndex int, numRecs int, movies map[int]types.Movie, genre string) []types.Movie {
+func GenerateRecommendationsByGenre(users map[int]types.User, userIndex int, numRecs int, movies map[int]types.Movie, genre string) []types.Movie {
 	similarityUsersScores := findSimilarUsers(users, userIndex)
 	recommendations := make(map[int]float64)
 	sumWeightedRating := 0.0

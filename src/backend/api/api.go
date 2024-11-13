@@ -48,6 +48,7 @@ func defineEndpoints() {
 	router.HandleFunc("/recommendations/{numRec}/genres/{genre}/users/{id}", getRecommendations).Methods("GET")
 	// Endpoint para obtener recomendaciones arriba del promedio usando WebSocket
 	// router.HandleFunc("/recommendations/above-average", wsGetAboveAverageRecommendations)
+	router.HandleFunc("/recommendations/above-average", wsGetAboveAverageRecommendations).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":9015", router))
 }
