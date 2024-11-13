@@ -15,15 +15,10 @@ import (
 )
 
 func getAllMovies(resp http.ResponseWriter, req *http.Request) {
-	log.Println("Calling getAllMovies")
 	resp.Header().Set("Content-Type", "application/json")
-	jsonBytes, err := json.MarshalIndent(movies, "", "  ")
-	if err != nil {
-		http.Error(resp, "Error serializing movies", http.StatusInternalServerError)
-		return
-	}
+	jsonBytes, _ := json.MarshalIndent(movies, "", "  ")
 	resp.Write(jsonBytes)
-	log.Println("getAllMovies called")
+	log.Println("Calling getAllMovies")
 }
 
 func getAllUsers(resp http.ResponseWriter, req *http.Request) {
