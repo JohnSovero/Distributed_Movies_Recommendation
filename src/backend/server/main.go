@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"bufio"
@@ -8,6 +8,7 @@ import (
 	"net"
 	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types"
 	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/model"
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/utils"
 )
 
 type RecommendationRequest struct {
