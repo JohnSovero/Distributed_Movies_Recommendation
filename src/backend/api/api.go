@@ -27,7 +27,7 @@ type RecommendationRequest struct {
 var users []int
 var movies []Movie
 
-// // Configuración del actualizador de WebSocket
+// Configuración del actualizador de WebSocket
 // var upgrader = websocket.Upgrader{
 // 	CheckOrigin: func(r *http.Request) bool {
 // 		return true // Cambiar esto para mayor seguridad en producción
@@ -43,10 +43,10 @@ func defineEndpoints() {
 	router.HandleFunc("/users", getAllUsers).Methods("GET")
 	// Endpoint para obtener una película por ID
 	router.HandleFunc("/movies/{id}", getMovieByID).Methods("GET")
-	// Endpoint para obtener recomendaciones usando WebSocket
-	router.HandleFunc("/recommendations/{numRec}/users/{id}", getRecommendations).Methods("GET")
-	// Endpoint para obtener recomendaciones arriba del promedio
-	// router.HandleFunc("/recommendations/above-average", getAboveAverageRecommendations).Methods("GET")
+	// Endpoint para obtener recomendaciones
+	router.HandleFunc("/recommendations/{numRec}/genre/{genre}/users/{id}", getRecommendations).Methods("GET")
+	// Endpoint para obtener recomendaciones arriba del promedio usando WebSocket
+	// router.HandleFunc("/recommendations/above-average", wsGetAboveAverageRecommendations)
 
 	// Iniciar el servidor en el puerto 9015
 	log.Fatal(http.ListenAndServe(":9015", router))
