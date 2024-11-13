@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/server/model"
 	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types"
-	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/model"
 	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/utils"
 )
 
@@ -16,7 +18,7 @@ type RecommendationRequest struct {
 	NumRec int `json:"numRec"`
 }
 
-func serverStartListening(port string, ratings map[int]types.User) {
+func serverStartListening(port string, ratings map[int]types.User, name string) {
 	address := "localhost:" + port
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
@@ -24,7 +26,7 @@ func serverStartListening(port string, ratings map[int]types.User) {
 		return
 	}
 	defer listener.Close()
-
+	fmt.Printf("Server %s escuchando en el puerto %s\n", name, port)
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -67,7 +69,7 @@ func serverHandleConnection(conn net.Conn, ratings map[int]types.User) {
 
 func main() {
 	// Leer archivo de recomendación de películas
-	pathRatings := "database/data/ratings25.csv"
+	pathRatings := "ratings25.csv"
 	// pathMovies := "dataset/movies25.csv"
 	fmt.Println("\nLeyendo archivos de datos...")
 	fmt.Println("--------------------------------")
@@ -78,6 +80,10 @@ func main() {
 	}
 
 	fmt.Println("Escuchando")
-	serverPort := "9000"
-	serverStartListening(serverPort, ratings)
+	serverPort := os.Getenv("PORT")
+	name := os.Getenv("NODE_NAME")
+	if serverPort == "" {
+		log.Fatal("El puerto no está configurado en la variable de entorno PORT")
+	}
+	serverStartListening(serverPort, ratings, name)
 }

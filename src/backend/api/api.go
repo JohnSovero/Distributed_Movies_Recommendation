@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+
 	"github.com/gorilla/mux"
 )
 
@@ -23,23 +25,27 @@ type RecommendationRequest struct {
 var users []int
 var movies []Movie
 
-func defineEndpoints() {
+func defineEndpoints(port string) {
 	router := mux.NewRouter()
 
 	// http.HandleFunc("/movies/", getAllMovies)
 	// http.HandleFunc("/users/", getAllUsers)
 	// http.HandleFunc("/movie/", getMovieByID)
 	// http.HandleFunc("recommendations/", getRecommendations)
-
+	port = ":" + port
 	router.HandleFunc("/movies", getAllMovies).Methods("GET")
 	router.HandleFunc("/users", getAllUsers).Methods("GET")
 	router.HandleFunc("/movies/{id}", getMovieByID).Methods("GET")
 	router.HandleFunc("/recommendations/{numRec}/users/{id}", getRecommendations).Methods("GET")
 
-	log.Fatal(http.ListenAndServe(":9015", router))
+	log.Fatal(http.ListenAndServe(port, router))
 }
 
 func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "9015" // Puerto por defecto si no está configurado
+	}
 	loadData()
-	defineEndpoints()
+	defineEndpoints(port)
 }

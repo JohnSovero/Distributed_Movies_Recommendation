@@ -73,7 +73,7 @@ func handleConnection(conn net.Conn) {
 }
 
 // Inicia el servicio de escucha en el puerto especificado
-func startListening(port string) {
+func startListening(port string, name string) {
 	address := fmt.Sprintf("localhost:%s", port)
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
@@ -81,6 +81,8 @@ func startListening(port string) {
 		return
 	}
 	defer listener.Close()
+	fmt.Printf("Nodo %s escuchando en puerto %s\n", name, port)
+	fmt.Println("Local address:", listener.Addr())
 
 	for { // Bucle para aceptar conexiones
 		conn, err := listener.Accept()
@@ -90,13 +92,6 @@ func startListening(port string) {
 		}
 		go handleConnection(conn)
 	}
-}
-
-// Obtiene entrada del usuario desde el terminal
-func getUserInput() string {
-	reader := bufio.NewReader(os.Stdin)
-	input, _ := reader.ReadString('\n')
-	return strings.TrimSpace(input)
 }
 
 // Calcula la similitud coseno entre dos conjuntos de valoraciones de usuario
@@ -133,7 +128,10 @@ func sendSimilarityResults(similarityData []SimilarityData, conn net.Conn) {
 }
 
 func main() {
-	fmt.Print("Ingrese el puerto para iniciar el servicio: ")
-	port := getUserInput()
-	startListening(port)
+	port := os.Getenv("PORT")
+	name := os.Getenv("NODE_NAME")
+	if port == "" {
+		log.Fatal("El puerto no está configurado en la variable de entorno PORT")
+	}
+	startListening(port, name)
 }
