@@ -1,3 +1,3 @@
-module github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/server
+module server
 
 go 1.23.0

@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
 	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types"
 )
 
