@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -179,9 +178,10 @@ func GenerateRecommendationsAboveAverage(users map[int]types.User, userIndex int
 }
 
 // Función para recomendar ítems a un usuario basado en usuarios similares
-func GenerateRecommendations(users map[int]types.User, userIndex int, numRecs int) []int {
+func GenerateRecommendations(users map[int]types.User, userIndex int, numRecs int, movies map[int]types.Movie, genre string) []types.Movie {
 	similarityUsersScores := findSimilarUsers(users, userIndex)
 	recommendations := make(map[int]float64)
+	sumWeightedRating := 0.0
 
 	var wg sync.WaitGroup
 	var mutex = &sync.Mutex{}
@@ -197,6 +197,7 @@ func GenerateRecommendations(users map[int]types.User, userIndex int, numRecs in
 					mutex.Lock()
 					// Ponderamos el rating por la similitud entre el usuario principal y el usuario similar
 					weightedRating := rating * similarity
+					sumWeightedRating += weightedRating
 					recommendations[itemID] += weightedRating
 					mutex.Unlock()
 				}
@@ -205,37 +206,34 @@ func GenerateRecommendations(users map[int]types.User, userIndex int, numRecs in
 	}
 	wg.Wait()
 
-	// Ordenar las recomendaciones por las calificaciones acumuladas
-	var sortedRecs []types.Kv
-	for k, v := range recommendations {
-		sortedRecs = append(sortedRecs, types.Kv{Key: k, Value: v})
-	}
-	sort.Slice(sortedRecs, func(i, j int) bool {
-		return sortedRecs[i].Value > sortedRecs[j].Value
-	})
+	// compute average rating
+	averageRating := sumWeightedRating / float64(len(recommendations))
 
-	var recommendedItems []int
-	for i := 0; i < numRecs && i < len(sortedRecs); i++ {
-		recommendedItems = append(recommendedItems, sortedRecs[i].Key)
-	}
-	return recommendedItems
-}
+	var wg2 sync.WaitGroup
+	var mu sync.Mutex
+	var moviesGenre []types.Movie
 
-// Recomienda películas a un usuario objetivo utilizando filtrado colaborativo e indica el tiempo de ejecución
-func PredictFC(users map[int]types.User, targetUser int, k int, movies map[int]types.Movie) {
-	fmt.Printf("\nPredicciones para el usuario %d\n", targetUser)
-	start := time.Now()
-	recommendationsFCC := GenerateRecommendations(users, targetUser, k)
-	elapsed := time.Since(start)
-
-	var movieTitles []string
-	for _, movieID := range recommendationsFCC {
-		movieTitles = append(movieTitles, movies[movieID].Title)
+	// get the movies with the genre and the weighted rating above average
+	for movieID, rating := range recommendations {
+		wg2.Add(1)
+		go func(movieID int, rating float64) {
+			defer wg2.Done()
+			for _, movie := range movies {
+				if movie.MovieID == movieID {
+					// Check if the genre exists in the movie's genres list
+					for _, g := range movie.Genres {
+						if g == genre && rating > averageRating {
+							mu.Lock() // Lock before modifying shared resource
+							moviesGenre = append(moviesGenre, movie)
+							mu.Unlock() // Unlock after modifying shared resource
+							break       // No need to check other genres if we found the match
+						}
+					}
+				}
+			}
+		}(movieID, rating)
 	}
+	wg2.Wait() // Wait for all goroutines to finish
 
-	fmt.Printf("\nPelículas recomendadas:\n")
-	for i, movie := range movieTitles {
-		fmt.Printf("\t%d. %s [id: %d]\n", i+1, movie, recommendationsFCC[i])
-	}
-	fmt.Printf("\nTiempo de ejecución de filtrado colaborativo: %v\n", elapsed)
+	return moviesGenre[:numRecs]
 }

@@ -4,6 +4,7 @@ import (
 	"PC4/types"
 	"encoding/csv"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -48,21 +49,36 @@ func ReadMoviesFromCSV(filename string) (map[int]types.Movie, error) {
 	defer file.Close()
 
 	reader := csv.NewReader(file)
-	records, err := reader.ReadAll()
-	if err != nil {
+
+	// Skip the header row
+	if _, err := reader.Read(); err != nil {
 		return nil, err
 	}
 
 	movieMap := make(map[int]types.Movie)
-	for _, record := range records[1:] { // Saltar el encabezado
-		movieID, _ := strconv.Atoi(record[0])
-		title := record[1]
-		genres := strings.Split(record[2], "|")
-
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		movieID, err := strconv.Atoi(record[0])
+		if err != nil {
+			return nil, err
+		}
+		year, err := strconv.Atoi(record[5])
+		if err != nil {
+			return nil, err
+		}
 		movieMap[movieID] = types.Movie{
-			MovieID: movieID,
-			Title:   title,
-			Genres:  genres,
+			MovieID:  movieID,
+			Title:    record[1],
+			Genres:   strings.Split(record[2], "|"),
+			IMDBLink: record[3],
+			TMDBLink: record[4],
+			Year:     year,
 		}
 	}
 	fmt.Println("\tMovies:", len(movieMap))
