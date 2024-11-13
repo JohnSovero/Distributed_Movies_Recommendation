@@ -86,6 +86,7 @@ func getRecommendations(resp http.ResponseWriter, req *http.Request) {
 	recReq := RecommendationRequest{
 		UserID: id,
 		NumRec: numRec,
+		Genre:  genre,
 	}
 
 	requestToServer, err := json.Marshal(recReq)
@@ -105,43 +106,15 @@ func getRecommendations(resp http.ResponseWriter, req *http.Request) {
 
 	// Trim the newline and unmarshal the response into a JSON object
 	moviesRec = strings.TrimSpace(moviesRec)
-	var recommendations []int
+	var recommendations []Movie
 	err = json.Unmarshal([]byte(moviesRec), &recommendations)
 	if err != nil {
 		http.Error(resp, "Error parsing recommendations", http.StatusInternalServerError)
 		return
 	}
 
-	// recommendations have the ids of the movies, concurrently get the movies and only save the ones with the genre
-	var wg sync.WaitGroup
-	var mu sync.Mutex
-	var moviesGenre []Movie
-
-	for _, movieID := range recommendations {
-		wg.Add(1)
-		go func(movieID int) {
-			defer wg.Done()
-			for _, movie := range movies {
-				if movie.MovieID == movieID {
-					// Check if the genre exists in the movie's genres list
-					for _, g := range movie.Genres {
-						if g == genre {
-							mu.Lock() // Lock before modifying shared resource
-							moviesGenre = append(moviesGenre, movie)
-							mu.Unlock() // Unlock after modifying shared resource
-							break       // No need to check other genres if we found the match
-						}
-					}
-				}
-			}
-		}(movieID)
-	}
-
-	wg.Wait() // Wait for all goroutines to finish
-
 	// Send the recommendations back as JSON
-	// respBytes, err := json.Marshal(recommendations)
-	respBytes, err := json.MarshalIndent(moviesGenre, "", "  ")
+	respBytes, err := json.MarshalIndent(recommendations, "", "  ")
 	if err != nil {
 		http.Error(resp, "Error serializing recommendations", http.StatusInternalServerError)
 		return

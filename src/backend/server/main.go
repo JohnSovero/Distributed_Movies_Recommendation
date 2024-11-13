@@ -12,11 +12,12 @@ import (
 )
 
 type RecommendationRequest struct {
-	UserID int `json:"userID"`
-	NumRec int `json:"numRec"`
+	UserID int    `json:"userID"`
+	NumRec int    `json:"numRec"`
+	Genre  string `json:"genre"`
 }
 
-func serverStartListening(port string, ratings map[int]types.User) {
+func serverStartListening(port string, ratings map[int]types.User, movies map[int]types.Movie) {
 	address := "localhost:" + port
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
@@ -31,11 +32,11 @@ func serverStartListening(port string, ratings map[int]types.User) {
 			log.Println("Error al aceptar conexión:", err)
 			continue
 		}
-		go serverHandleConnection(conn, ratings)
+		go serverHandleConnection(conn, ratings, movies)
 	}
 }
 
-func serverHandleConnection(conn net.Conn, ratings map[int]types.User) {
+func serverHandleConnection(conn net.Conn, ratings map[int]types.User, movies map[int]types.Movie) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 	for {
@@ -54,7 +55,7 @@ func serverHandleConnection(conn net.Conn, ratings map[int]types.User) {
 
 		fmt.Println("Mensaje recibido:", body)
 
-		recommendations := model.GenerateRecommendations(ratings, body.UserID, body.NumRec)
+		recommendations := model.GenerateRecommendations(ratings, body.UserID, body.NumRec, movies, body.Genre)
 
 		recommendationsJSON, err := json.Marshal(recommendations)
 		if err != nil {
@@ -68,7 +69,7 @@ func serverHandleConnection(conn net.Conn, ratings map[int]types.User) {
 func main() {
 	// Leer archivo de recomendación de películas
 	pathRatings := "database/data/ratings25.csv"
-	// pathMovies := "dataset/movies25.csv"
+	pathMovies := "database/data/movies_complete.csv"
 	fmt.Println("\nLeyendo archivos de datos...")
 	fmt.Println("--------------------------------")
 	fmt.Println("Detalle de la información procesada:")
@@ -76,8 +77,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error leyendo los ratings del csv: %v", err)
 	}
+	movies, err := utils.ReadMoviesFromCSV(pathMovies)
+	if err != nil {
+		log.Fatalf("Error leyendo las películas del csv: %v", err)
+	}
 
 	fmt.Println("Escuchando")
 	serverPort := "9000"
-	serverStartListening(serverPort, ratings)
+	serverStartListening(serverPort, ratings, movies)
 }

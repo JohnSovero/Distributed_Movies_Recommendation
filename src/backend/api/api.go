@@ -16,8 +16,9 @@ type Movie struct {
 }
 
 type RecommendationRequest struct {
-	UserID int `json:"userID"`
-	NumRec int `json:"numRec"`
+	UserID int    `json:"userID"`
+	NumRec int    `json:"numRec"`
+	Genre  string `json:"genre"`
 }
 
 var users []int
@@ -43,7 +44,7 @@ func defineEndpoints() {
 	router.HandleFunc("/users", getAllUsers).Methods("GET")
 	router.HandleFunc("/movies/{id}", getMovieByID).Methods("GET")
 	// Endpoint para obtener recomendaciones
-	router.HandleFunc("/recommendations/{numRec}/genre/{genre}/users/{id}", getRecommendations).Methods("GET")
+	router.HandleFunc("/recommendations/{numRec}/genres/{genre}/users/{id}", getRecommendations).Methods("GET")
 	// Endpoint para obtener recomendaciones arriba del promedio usando WebSocket
 	// router.HandleFunc("/recommendations/above-average", wsGetAboveAverageRecommendations)
 
