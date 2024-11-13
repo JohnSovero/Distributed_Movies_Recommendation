@@ -1,14 +1,14 @@
 package main
 
 import (
-	"PC4/model"
-	"PC4/types"
-	"PC4/utils"
 	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net"
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types"
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/model"
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/utils"
 )
 
 type RecommendationRequest struct {

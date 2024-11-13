@@ -1,13 +1,13 @@
 package utils
 
 import (
-	"PC4/types"
 	"encoding/csv"
 	"fmt"
 	"io"
 	"os"
 	"strconv"
 	"strings"
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types"
 )
 
 // Leer los ratings de un archivo CSV
