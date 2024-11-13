@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
+
 	"github.com/gorilla/mux"
-	"github.com/gorilla/websocket"
 )
 
 // Estructura para representar una película
@@ -27,12 +27,12 @@ type RecommendationRequest struct {
 var users []int
 var movies []Movie
 
-// Configuración del actualizador de WebSocket
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true // Cambiar esto para mayor seguridad en producción
-	},
-}
+// // Configuración del actualizador de WebSocket
+// var upgrader = websocket.Upgrader{
+// 	CheckOrigin: func(r *http.Request) bool {
+// 		return true // Cambiar esto para mayor seguridad en producción
+// 	},
+// }
 
 // Función para definir los endpoints de la API
 func defineEndpoints() {
@@ -44,7 +44,9 @@ func defineEndpoints() {
 	// Endpoint para obtener una película por ID
 	router.HandleFunc("/movies/{id}", getMovieByID).Methods("GET")
 	// Endpoint para obtener recomendaciones usando WebSocket
-	router.HandleFunc("/recommendations/{numRec}/users/{id}", getRecommendationsWS)
+	router.HandleFunc("/recommendations/{numRec}/users/{id}", getRecommendations).Methods("GET")
+	// Endpoint para obtener recomendaciones arriba del promedio
+	// router.HandleFunc("/recommendations/above-average", getAboveAverageRecommendations).Methods("GET")
 
 	// Iniciar el servidor en el puerto 9015
 	log.Fatal(http.ListenAndServe(":9015", router))
@@ -52,6 +54,6 @@ func defineEndpoints() {
 
 // Función principal
 func main() {
-	loadData()  	  // Cargar datos iniciales
+	loadData()        // Cargar datos iniciales
 	defineEndpoints() // Definir los endpoints de la API
 }

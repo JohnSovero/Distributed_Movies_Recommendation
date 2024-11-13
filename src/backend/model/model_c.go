@@ -22,6 +22,7 @@ var mutex = &sync.Mutex{}
 
 const TIMEOUT = 10 * time.Second
 const MAX_RETRIES = 2
+
 // 500ms
 const RETRY_DELAY = 150 * time.Millisecond
 
@@ -118,6 +119,63 @@ func HandleClients(conn net.Conn) {
 		similarityScores[userId] = data.Similarity
 	}
 
+}
+
+// Generate recommendations and return the ones with the score above average (i want all, not specifying the number)
+func GenerateRecommendationsAboveAverage(users map[int]types.User, userIndex int) []int {
+	similarityUsersScores := findSimilarUsers(users, userIndex)
+	recommendations := make(map[int]float64)
+	averageWeightedRating := 0.0
+
+	var wg sync.WaitGroup
+	var mutex = &sync.Mutex{}
+
+	for similarUserID, similarity := range similarityUsersScores {
+		wg.Add(1)
+		go func(similarUserID int, similarity float64) {
+			defer wg.Done()
+
+			// Iterar sobre las calificaciones del usuario similar
+			for itemID, rating := range users[similarUserID].Ratings {
+				if _, exists := users[userIndex].Ratings[itemID]; !exists { // Si el usuario principal no ha calificado el ítem
+					mutex.Lock()
+					// Ponderamos el rating por la similitud entre el usuario principal y el usuario similar
+					weightedRating := rating * similarity
+					averageWeightedRating += weightedRating
+					recommendations[itemID] += weightedRating
+					mutex.Unlock()
+				}
+			}
+		}(similarUserID, similarity)
+	}
+	wg.Wait()
+
+	// Ordenar las recomendaciones por las calificaciones acumuladas
+	var aboveAvgRecs []int
+	for k, v := range recommendations {
+		if v > averageWeightedRating {
+			aboveAvgRecs = append(aboveAvgRecs, k)
+		}
+	}
+	return aboveAvgRecs
+
+	// var sortedRecs []types.Kv
+	// for k, v := range recommendations {
+	// 	sortedRecs = append(sortedRecs, types.Kv{Key: k, Value: v})
+	// }
+	// sort.Slice(sortedRecs, func(i, j int) bool {
+	// 	return sortedRecs[i].Value > sortedRecs[j].Value
+	// })
+
+	// var recommendedItems []int
+	// for i := 0; i < len(recommendations); i++ {
+	// 	if sortedRecs[i].Value > averageWeightedRating {
+	// 		recommendedItems = append(recommendedItems, sortedRecs[i].Key)
+	// 	} else {
+	// 		break
+	// 	}
+	// }
+	// return recommendedItems
 }
 
 // Función para recomendar ítems a un usuario basado en usuarios similares
