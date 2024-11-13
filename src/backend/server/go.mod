@@ -1,5 +1,5 @@
-module github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/server
+module server
 
 go 1.23.0
 
-require github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend v0.0.0-20241113024931-f4237097125a // indirect
+require github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend v0.0.0-20241113025313-0141e978bc6e // indirect

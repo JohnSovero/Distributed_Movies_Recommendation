@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types"
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/model"
 )
 
 type RecommendationRequest struct {
