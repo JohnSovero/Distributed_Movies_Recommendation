@@ -1,12 +1,12 @@
 package utils
 
 import (
-	"PC4/types"
 	"encoding/csv"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
+	"backend/types"
 )
 
 // Leer los ratings de un archivo CSV
