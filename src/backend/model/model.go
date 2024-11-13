@@ -1,8 +1,6 @@
 package model
 
 import (
-	"PC4/types"
-	"PC4/utils"
 	"bufio"
 	"encoding/json"
 	"fmt"
@@ -12,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types"
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/utils"
 )
 
 // Variables globales
