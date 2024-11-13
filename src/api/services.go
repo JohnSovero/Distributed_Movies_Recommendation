@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/gorilla/mux"
@@ -80,28 +81,41 @@ func getRecommendations(resp http.ResponseWriter, req *http.Request) {
 	}
 	defer conn.Close()
 
-	// create recommendation request with user id and number of recommendations
+	// Create recommendation request with user ID and number of recommendations
 	recReq := RecommendationRequest{
 		UserID: id,
 		NumRec: numRec,
 	}
 
-	requestToServer, error := json.Marshal(recReq)
-	requestToServerStr := string(requestToServer)
-
-	if error != nil {
+	requestToServer, err := json.Marshal(recReq)
+	if err != nil {
 		http.Error(resp, "Error creating request", http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Fprintln(conn, requestToServerStr)
+	fmt.Fprintln(conn, string(requestToServer))
 
 	bf := bufio.NewReader(conn)
-	moviesRec, error := bf.ReadString('\n')
-	if error != nil {
+	moviesRec, err := bf.ReadString('\n')
+	if err != nil {
 		http.Error(resp, "Error reading response", http.StatusInternalServerError)
 		return
 	}
-	jsonBytes, _ := json.MarshalIndent(moviesRec, "", "  ")
-	resp.Write(jsonBytes)
+
+	// Trim the newline and unmarshal the response into a JSON object
+	moviesRec = strings.TrimSpace(moviesRec)
+	var recommendations []int
+	err = json.Unmarshal([]byte(moviesRec), &recommendations)
+	if err != nil {
+		http.Error(resp, "Error parsing recommendations", http.StatusInternalServerError)
+		return
+	}
+
+	// Send the recommendations back as JSON
+	respBytes, err := json.Marshal(recommendations)
+	if err != nil {
+		http.Error(resp, "Error serializing recommendations", http.StatusInternalServerError)
+		return
+	}
+	resp.Write(respBytes)
 }

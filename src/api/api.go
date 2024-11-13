@@ -32,8 +32,8 @@ func defineEndpoints() {
 	// http.HandleFunc("/movie/", getMovieByID)
 	// http.HandleFunc("recommendations/", getRecommendations)
 
-	router.HandleFunc("/movies/", getAllMovies).Methods("GET")
-	router.HandleFunc("/users/", getAllUsers).Methods("GET")
+	router.HandleFunc("/movies", getAllMovies).Methods("GET")
+	router.HandleFunc("/users", getAllUsers).Methods("GET")
 	router.HandleFunc("/movies/{id}", getMovieByID).Methods("GET")
 	router.HandleFunc("/recommendations/{numRec}/users/{id}", getRecommendations).Methods("GET")
 
