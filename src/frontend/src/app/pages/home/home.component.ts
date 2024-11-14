@@ -1,39 +1,14 @@
-import { WebsocketService } from './../../core/services/websocket.service';
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Movie } from '../../core/models/movie.model';
-import { Subscription } from 'rxjs';
-import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
+import { BannerComponent } from '../../shared/banner/banner.component';
+import { GenreRecComponent } from '../../shared/genre-rec/genre-rec.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule],
+  imports: [BannerComponent, GenreRecComponent], // Include HttpClientModule here
   templateUrl: './home.component.html',
   styleUrl: './home.component.css'
 })
-export class HomeComponent implements OnInit, OnDestroy {
-  bannerRecommendations: Movie[] = [];
-  private bannerSubscription !: Subscription;
-
-  constructor(
-    private websocketService: WebsocketService
-  ) {}
-
-  ngOnInit(): void {
-    this.connect();
-  }
-
-  connect() {
-    this.websocketService.connect('ws://localhost:9015/recommendations/above-average');
-
-    this.bannerSubscription = this.websocketService.messages$.subscribe(
-      (data) => this.bannerRecommendations = data
-    );
-  }
-
-  ngOnDestroy() {
-    this.bannerSubscription.unsubscribe();
-    this.websocketService.disconnect();
-  }
-
+export class HomeComponent {
+  
 }

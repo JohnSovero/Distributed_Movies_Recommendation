@@ -1,0 +1,12 @@
+<div *ngIf="showRecommendations" class="banner-container">
+  <p>Movies you might like</p>
+  <div class="banner">
+    <div *ngFor="let movie of bannerRecommendations; let i = index" class="movie-card" 
+         [ngClass]="{ 'visible': i === currentMovieIndex, 'hidden': i !== currentMovieIndex }">
+      <img *ngIf="movie.poster" [src]="movie.poster" alt="{{ movie.title }}" />
+      <div class="movie-title-overlay">
+        <h3>{{ movie.vote_avg }}</h3>
+      </div>
+    </div>
+  </div>
+</div>

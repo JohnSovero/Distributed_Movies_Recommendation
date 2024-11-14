@@ -1,0 +1,57 @@
+.movie-card {
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+    position: relative; /* Make movie card relative to allow absolute positioning inside */
+}
+
+.banner {
+    width: 300px;
+}
+
+.banner-container {
+    width: 300px;
+}
+
+p {
+    font-size: larger;
+    font-weight: 500;
+    margin: 0;
+    margin-right: 5px;
+    color: black;
+}
+
+h3 {
+    margin: 0;
+}
+  
+.movie-card.visible {
+    opacity: 1;
+}
+
+.banner-container p{
+    text-align: right;
+    width: right;
+}
+  
+.movie-card.hidden {
+    opacity: 0;
+    display: none;  /* Optionally, you can also use display: none here to prevent the element from occupying space */
+}
+  
+.movie-card img {
+    width: 100%;  /* Make sure the image fills the card */
+    height: auto; /* Maintain aspect ratio */
+    border-radius: 8px;
+    /* make it darker */
+    /* filter: brightness(70%); */
+}
+  
+.movie-title-overlay {
+    position: absolute;
+    bottom: 10px; /* Adjust based on your design */
+    left: 10px;   /* Adjust based on your design */
+    background-color: rgba(0, 0, 0, 0.5); /* Optional, dark background for better readability */
+    color: white; /* Title text color */
+    padding: 5px;
+    border-radius: 5px;
+}

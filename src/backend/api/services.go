@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"net"
 	"net/http"
 	"strconv"
@@ -144,7 +143,7 @@ func sendAboveAverageRequest(conn *websocket.Conn, userID int) {
 	req := RecommendationRequest{
 		UserID: userID,
 		NumRec: 5, // or any number you want to set for recommendations
-		Genre:  "All",
+		Genre:  "Random",
 	}
 	reqBytes, _ := json.Marshal(req)
 	fmt.Fprintln(tcpConn, string(reqBytes)) // Send request to the server
@@ -164,6 +163,17 @@ func sendAboveAverageRequest(conn *websocket.Conn, userID int) {
 }
 
 func wsGetAboveAverageRecommendations(resp http.ResponseWriter, req *http.Request) {
+	// Get the user ID from the query parameters
+	userIDStr := req.URL.Query().Get("userId")
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(resp, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	// Log or use the userID
+	log.Printf("Received User ID: %d", userID)
+
 	// Upgrade HTTP to WebSocket
 	conn, err := upgrader.Upgrade(resp, req, nil)
 	if err != nil {
@@ -187,22 +197,21 @@ func wsGetAboveAverageRecommendations(resp http.ResponseWriter, req *http.Reques
 		}
 	}()
 
-	// Assign a random user ID
-	userID := rand.Intn(10) + 1
+	// Log or use the userID for further processing
 	log.Printf("Assigned User ID: %d", userID)
 
 	// Send initial request
 	sendAboveAverageRequest(conn, userID)
 
 	// Set up a ticker to send requests every 1 Minute
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(2 * time.Minute)
 	defer ticker.Stop()
 
 	// Loop to send requests periodically
 	for {
 		select {
 		case <-ticker.C:
-			// Send request every 10 seconds
+			// Send request every 2 minutes
 			sendAboveAverageRequest(conn, userID)
 		case <-stop:
 			// Stop the loop if the WebSocket is closed
