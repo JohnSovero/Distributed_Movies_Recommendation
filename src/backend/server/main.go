@@ -75,8 +75,8 @@ func serverHandleConnection(conn net.Conn, ratings map[int]types.User, movies ma
 
 func main() {
 	// Leer archivo de recomendación de películas
-	pathRatings := "database/data/ratings25.csv"
-	pathMovies := "database/data/movies_complete.csv"
+	pathRatings := "../database/data/ratings25.csv"
+	pathMovies := "../database/data/movies_complete.csv"
 	fmt.Println("\nLeyendo archivos de datos...")
 	fmt.Println("--------------------------------")
 	fmt.Println("Detalle de la información procesada:")
