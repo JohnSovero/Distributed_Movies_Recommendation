@@ -7,9 +7,9 @@ services:
     environment:
       - NODE_NAME=server
       - PORT=9000
-      - NODO1=nodo1:8000
-      - NODO2=nodo2:8001
-      - NODO3=nodo3:8002
+      - NODO1=node1:8000
+      - NODO2=node2:8001
+      - NODO3=node3:8002
     ports:
       - "9000:9000"
     networks:

@@ -20,8 +20,7 @@ type RecommendationRequest struct {
 }
 
 func serverStartListening(port string, ratings map[int]types.User, name string, movies map[int]types.Movie) {
-	//address := "localhost:" + port
-	address := fmt.Sprintf(":%s", port)
+	address := ":" + port
 	listener, err := net.Listen("tcp", address)
 	log.Println("Server listening on", address)
 	if err != nil {
@@ -41,40 +40,40 @@ func serverStartListening(port string, ratings map[int]types.User, name string, 
 }
 
 func serverHandleConnection(conn net.Conn, ratings map[int]types.User, movies map[int]types.Movie) {
-    defer conn.Close()
-    reader := bufio.NewReader(conn)
-    for {
-        message, err := reader.ReadString('\n')
-        if err != nil {
-            if err.Error() == "EOF" {
-                log.Println("Conexión cerrada por el cliente.")
-                return
-            }
-            log.Println("Error al leer mensaje:", err)
-            return
-        }
+	defer conn.Close()
+	reader := bufio.NewReader(conn)
+	for {
+		message, err := reader.ReadString('\n')
+		if err != nil {
+			if err.Error() == "EOF" {
+				log.Println("Conexión cerrada por el cliente.")
+				return
+			}
+			log.Println("Error al leer mensaje:", err)
+			return
+		}
 
-        var body RecommendationRequest
-        json.Unmarshal([]byte(message), &body)
+		var body RecommendationRequest
+		json.Unmarshal([]byte(message), &body)
 
-        fmt.Println("Mensaje recibido:", body)
-        fmt.Println("Genre received", body.Genre)
+		fmt.Println("Mensaje recibido:", body)
+		fmt.Println("Genre received", body.Genre)
 
-        var recommendations []types.Movie
+		var recommendations []types.Movie
 
-        if body.Genre == "All" {
-            recommendations = model.GenerateRecommendationsAboveAverage(ratings, body.UserID, movies, body.NumRec)
-        } else {
-            recommendations = model.GenerateRecommendationsByGenre(ratings, body.UserID, body.NumRec, movies, body.Genre)
-        }
+		if body.Genre == "All" {
+			recommendations = model.GenerateRecommendationsAboveAverage(ratings, body.UserID, movies, body.NumRec)
+		} else {
+			recommendations = model.GenerateRecommendationsByGenre(ratings, body.UserID, body.NumRec, movies, body.Genre)
+		}
 
-        recommendationsJSON, err := json.Marshal(recommendations)
-        if err != nil {
-            log.Println("Error al serializar recomendaciones:", err)
-            return
-        }
-        fmt.Fprintln(conn, string(recommendationsJSON))
-    }
+		recommendationsJSON, err := json.Marshal(recommendations)
+		if err != nil {
+			log.Println("Error al serializar recomendaciones:", err)
+			return
+		}
+		fmt.Fprintln(conn, string(recommendationsJSON))
+	}
 }
 
 func main() {
@@ -95,7 +94,7 @@ func main() {
 
 	fmt.Println("Escuchando")
 	serverPort := os.Getenv("PORT")
-	
+
 	name := os.Getenv("NODE_NAME")
 	if serverPort == "" {
 		log.Fatal("El puerto no está configurado en la variable de entorno PORT")

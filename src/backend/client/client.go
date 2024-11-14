@@ -74,7 +74,7 @@ func handleConnection(conn net.Conn) {
 
 // Inicia el servicio de escucha en el puerto especificado
 func startListening(port string, name string) {
-	address := fmt.Sprintf("localhost:%s", port)
+	address := fmt.Sprintf(":%s", port)
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Println("Error al iniciar el servicio de escucha:", err)

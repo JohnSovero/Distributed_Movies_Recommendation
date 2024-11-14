@@ -174,7 +174,7 @@ func wsGetAboveAverageRecommendations(resp http.ResponseWriter, req *http.Reques
 	defer conn.Close()
 
 	// Assign a random user ID
-	userID := rand.Intn(10)
+	userID := rand.Intn(10) + 1
 	log.Printf("Assigned User ID: %d", userID)
 
 	// Send initial request
