@@ -15,7 +15,7 @@ func loadData() {
 }
 
 func loadMoviesFromCSV() {
-	file, err := os.Open("./database/data/movies_complete.csv")
+	file, err := os.Open("movies_complete.csv")
 	if err != nil {
 		log.Fatal("Error while opening movies file:", err)
 	}
@@ -60,7 +60,7 @@ func loadMoviesFromCSV() {
 }
 
 func loadUsersFromCSV() {
-	file, err := os.Open("./database/data/users.csv")
+	file, err := os.Open("users.csv")
 	if err != nil {
 		log.Fatal("Error while opening users file:", err)
 	}

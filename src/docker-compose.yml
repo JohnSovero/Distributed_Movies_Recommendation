@@ -1,0 +1,76 @@
+services:
+  # Servidor
+  server:
+    build:
+      context: ./backend/server
+      dockerfile: Dockerfile
+    environment:
+      - NODE_NAME=server
+      - PORT=9000
+      - NODO1=nodo1:8000
+      - NODO2=nodo2:8001
+      - NODO3=nodo3:8002
+    ports:
+      - "9000:9000"
+    networks:
+      - nodes_network
+      - app
+    depends_on:
+      - node1
+      - node2
+      - node3
+
+  # NODOS CLIENTES
+  node1:
+    build:
+      context: ./backend/client
+      dockerfile: Dockerfile
+    environment:
+      - NODE_NAME=node1
+      - PORT=8000
+    ports:
+      - "8000:8000"
+    networks:
+      - nodes_network
+
+  node2:
+    build:
+      context: ./backend/client
+      dockerfile: Dockerfile
+    environment:
+      - NODE_NAME=node2
+      - PORT=8001
+    ports:
+      - "8001:8001"
+    networks:
+      - nodes_network
+
+  node3:
+    build:
+      context: ./backend/client
+      dockerfile: Dockerfile
+    environment:
+      - NODE_NAME=node3
+      - PORT=8002
+    ports:
+      - "8002:8002"
+    networks:
+      - nodes_network
+
+  # API ENDPOINT (BACKEND)
+  api:
+    build:
+      context: ./backend/api
+      dockerfile: Dockerfile
+    environment:
+      - PORT=9015
+    ports:
+      - "9015:9015"
+    networks:
+      - app
+    depends_on:
+      - server
+  
+networks:
+  nodes_network:
+  app:

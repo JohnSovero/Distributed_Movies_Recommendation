@@ -83,7 +83,7 @@ func getRecommendations(resp http.ResponseWriter, req *http.Request) {
 	}
 	genre := vars["genre"]
 
-	conn, err := net.Dial("tcp", "localhost:9000")
+	conn, err := net.Dial("tcp", "server:9000")
 	if err != nil {
 		http.Error(resp, "Error connecting to the server", http.StatusInternalServerError)
 		return
@@ -133,7 +133,7 @@ func getRecommendations(resp http.ResponseWriter, req *http.Request) {
 // Helper function to send the "above average" recommendation request to the server
 func sendAboveAverageRequest(conn *websocket.Conn, userID int) {
 	// Dial the TCP server
-	tcpConn, err := net.Dial("tcp", "localhost:9000")
+	tcpConn, err := net.Dial("tcp", "server:9000")
 	if err != nil {
 		log.Println("Error connecting to TCP server:", err)
 		return

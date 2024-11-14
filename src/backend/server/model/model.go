@@ -1,20 +1,27 @@
 package model
 
 import (
-	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types"
-	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/utils"
 	"bufio"
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types"
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/utils"
 )
 
 // Variables globales
-var clientAddresses = []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+var clientAddresses = []string{
+	os.Getenv("NODO1"),
+	os.Getenv("NODO2"),
+	os.Getenv("NODO3"),
+}
+
 var similarityScores map[int]float64
 var waitGroupResponses = sync.WaitGroup{}
 var mutex = &sync.Mutex{}
