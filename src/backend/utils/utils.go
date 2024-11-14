@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"PC4/types"
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types"
 	"encoding/csv"
 	"fmt"
 	"io"
