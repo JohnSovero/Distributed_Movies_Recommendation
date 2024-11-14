@@ -8,12 +8,15 @@ import (
 )
 
 type Movie struct {
-	MovieID  int      `json:"id"`
-	Title    string   `json:"title"`
-	Year     int      `json:"year"`
-	Genres   []string `json:"genres"`
-	IMDBLink string   `json:"imdb_link"`
-	TMDBLink string   `json:"tmdb_link"`
+	MovieID    int      `json:"id"`
+	Title      string   `json:"title"`
+	Year       int      `json:"year"`
+	Genres     []string `json:"genres"`
+	IMDBLink   string   `json:"imdb_link"`
+	TMDBLink   string   `json:"tmdb_link"`
+	Overview   string   `json:"overview"`
+	VoteAvg    string   `json:"vote_avg"`
+	PosterPath string   `json:"poster"`
 }
 
 type RecommendationRequest struct {

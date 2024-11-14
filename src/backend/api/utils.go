@@ -45,12 +45,15 @@ func loadMoviesFromCSV() {
 			log.Fatal("Error while parsing movie year:", err)
 		}
 		movie := Movie{
-			MovieID:  movieID,
-			Title:    record[1],
-			Genres:   strings.Split(record[2], "|"),
-			IMDBLink: record[3],
-			TMDBLink: record[4],
-			Year:     year,
+			MovieID:    movieID,
+			Title:      record[1],
+			Genres:     strings.Split(record[2], "|"),
+			IMDBLink:   record[3],
+			TMDBLink:   record[4],
+			Year:       year,
+			Overview:   record[7],
+			VoteAvg:    record[8],
+			PosterPath: record[9],
 		}
 		movies = append(movies, movie)
 	}

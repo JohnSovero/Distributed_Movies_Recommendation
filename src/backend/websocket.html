@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Recommendations</title>
+    <style>
+        #output {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Recommendations</h1>
+    <button id="connectButton">Connect to WebSocket</button>
+    <div id="output"></div>
+
+    <script>
+        let ws;
+
+        // Get the output div to display the recommendations
+        const outputDiv = document.getElementById('output');
+        const connectButton = document.getElementById('connectButton');
+
+        connectButton.addEventListener('click', () => {
+            // Open WebSocket connection when the button is clicked
+            ws = new WebSocket('ws://localhost:9015/recommendations/above-average');
+
+            // WebSocket event listener for connection
+            ws.onopen = () => {
+                outputDiv.innerHTML = 'Connected to WebSocket.\n';
+            };
+
+            // WebSocket event listener for receiving messages
+            ws.onmessage = (event) => {
+                // Parse the received JSON message
+                const recommendations = JSON.parse(event.data);
+
+                // Display the JSON response in the output div
+                outputDiv.innerHTML = 'Recommendations (above average):\n' + JSON.stringify(recommendations, null, 2);
+            };
+
+            // WebSocket event listener for errors
+            ws.onerror = (error) => {
+                outputDiv.innerHTML = 'Error: ' + error.message;
+            };
+
+            // WebSocket event listener for connection close
+            ws.onclose = () => {
+                outputDiv.innerHTML += '\nConnection closed.\n';
+            };
+        });
+    </script>
+</body>
+</html>

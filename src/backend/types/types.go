@@ -2,12 +2,15 @@ package types
 
 // Movie representa una película con su ID, título y géneros
 type Movie struct {
-	MovieID  int      `json:"id"`
-	Title    string   `json:"title"`
-	Year     int      `json:"year"`
-	Genres   []string `json:"genres"`
-	IMDBLink string   `json:"imdb_link"`
-	TMDBLink string   `json:"tmdb_link"`
+	MovieID    int      `json:"id"`
+	Title      string   `json:"title"`
+	Year       int      `json:"year"`
+	Genres     []string `json:"genres"`
+	IMDBLink   string   `json:"imdb_link"`
+	TMDBLink   string   `json:"tmdb_link"`
+	Overview   string   `json:"overview"`
+	VoteAvg    string   `json:"vote_avg"`
+	PosterPath string   `json:"poster"`
 }
 
 // Rating representa una calificación de un usuario a un ítem
