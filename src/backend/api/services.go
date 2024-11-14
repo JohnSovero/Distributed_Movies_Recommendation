@@ -163,7 +163,6 @@ func sendAboveAverageRequest(conn *websocket.Conn, userID int) {
 	}
 }
 
-// wsGetAboveAverageRecommendations is called whenever a new WebSocket connection is established
 func wsGetAboveAverageRecommendations(resp http.ResponseWriter, req *http.Request) {
 	// Upgrade HTTP to WebSocket
 	conn, err := upgrader.Upgrade(resp, req, nil)
@@ -173,6 +172,21 @@ func wsGetAboveAverageRecommendations(resp http.ResponseWriter, req *http.Reques
 	}
 	defer conn.Close()
 
+	// Channel to stop the loop
+	stop := make(chan struct{})
+
+	// Start a goroutine to listen for WebSocket close events
+	go func() {
+		// This will block until the connection is closed or an error occurs
+		for {
+			_, _, err := conn.NextReader()
+			if err != nil {
+				close(stop) // Signal to stop the ticker loop
+				break
+			}
+		}
+	}()
+
 	// Assign a random user ID
 	userID := rand.Intn(10) + 1
 	log.Printf("Assigned User ID: %d", userID)
@@ -180,12 +194,20 @@ func wsGetAboveAverageRecommendations(resp http.ResponseWriter, req *http.Reques
 	// Send initial request
 	sendAboveAverageRequest(conn, userID)
 
-	// Set up a ticker to send requests every minute
-	ticker := time.NewTicker(10 * time.Second)
+	// Set up a ticker to send requests every 1 Minute
+	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		// Send request every minute
-		sendAboveAverageRequest(conn, userID)
+	// Loop to send requests periodically
+	for {
+		select {
+		case <-ticker.C:
+			// Send request every 10 seconds
+			sendAboveAverageRequest(conn, userID)
+		case <-stop:
+			// Stop the loop if the WebSocket is closed
+			log.Println("WebSocket closed by client")
+			return
+		}
 	}
 }
