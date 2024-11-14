@@ -1,2 +1,2 @@
-github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types v0.0.0-20241114013939-611d084152d4 h1:9hLL0vdsx5vmitd4aR3r0Fyryil/xl0KJg5jPwz7A80=
-github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types v0.0.0-20241114013939-611d084152d4/go.mod h1:xy0NOrQl44dfCicEazIMWM7xHCZlOe5kWNYGyprzJ+0=
+github.com/JohnSovero/Distributed_Movies_Recommendation v1.0.3 h1:p3QFqXC+LliHxbGqK4cyEpn76B2uRlVIKOFbNq5JwCI=
+github.com/JohnSovero/Distributed_Movies_Recommendation v1.0.3/go.mod h1:6nYjZfy03quzHWGcXUYZr1ruYL3W/TvrJTW/RhxFeso=

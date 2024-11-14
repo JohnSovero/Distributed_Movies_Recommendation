@@ -1,6 +1,2 @@
-github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/model v0.0.0-20241113054720-70af962f9f6d h1:/aOhW3ekz/ZtwiZangnZYoQsg3Nfil54GnNoJ0kaq2M=
-github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/model v0.0.0-20241113054720-70af962f9f6d/go.mod h1:w7ofbuUZ66GTkhohl1/PQrVAo0wEC+jgahh6EOfE1sY=
-github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types v0.0.0-20241114013939-611d084152d4 h1:9hLL0vdsx5vmitd4aR3r0Fyryil/xl0KJg5jPwz7A80=
-github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types v0.0.0-20241114013939-611d084152d4/go.mod h1:xy0NOrQl44dfCicEazIMWM7xHCZlOe5kWNYGyprzJ+0=
-github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/utils v0.0.0-20241113054720-70af962f9f6d h1:ITT1mnamz13bTP+PvNemIQ76lANy3IUBQfN6NDz0DpU=
-github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/utils v0.0.0-20241113054720-70af962f9f6d/go.mod h1:AWUtgeRQHhwUVLQ4Um6CkQcdVdr+Uo/a/T8eCZ6NfI8=
+github.com/JohnSovero/Distributed_Movies_Recommendation v1.0.3 h1:p3QFqXC+LliHxbGqK4cyEpn76B2uRlVIKOFbNq5JwCI=
+github.com/JohnSovero/Distributed_Movies_Recommendation v1.0.3/go.mod h1:6nYjZfy03quzHWGcXUYZr1ruYL3W/TvrJTW/RhxFeso=
