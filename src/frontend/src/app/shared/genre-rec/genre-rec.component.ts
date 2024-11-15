@@ -71,7 +71,9 @@ export class GenreRecComponent {
     this.showRecommendations = false;
     this.dataService.getRecommendations(this.selectedGenre).subscribe((movies) => {
       this.genreRecommendations = movies;
+      console.log('Movies arrived! time:', new Date().toLocaleTimeString());
       this.updatePosterPaths();
+      console.log('Posters updated! time:', new Date().toLocaleTimeString());
       this.showRecommendations = true;
     });
   }

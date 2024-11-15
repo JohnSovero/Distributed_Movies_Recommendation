@@ -34,18 +34,11 @@ var movies []Movie
 func defineEndpoints(port string) {
 	router := mux.NewRouter()
 
-	// http.HandleFunc("/movies/", getAllMovies)
-	// http.HandleFunc("/users/", getAllUsers)
-	// http.HandleFunc("/movie/", getMovieByID)
-	// http.HandleFunc("recommendations/", getRecommendations)
 	port = ":" + port
 	router.HandleFunc("/movies", getAllMovies).Methods("GET")
 	router.HandleFunc("/users", getAllUsers).Methods("GET")
 	router.HandleFunc("/movies/{id}", getMovieByID).Methods("GET")
-	// Endpoint para obtener recomendaciones
 	router.HandleFunc("/recommendations/{numRec}/genres/{genre}/users/{id}", getRecommendations).Methods("GET")
-	// Endpoint para obtener recomendaciones arriba del promedio usando WebSocket
-	// router.HandleFunc("/recommendations/above-average", wsGetAboveAverageRecommendations)
 	router.HandleFunc("/recommendations/above-average", wsGetAboveAverageRecommendations).Methods("GET")
 
 	corsMiddleware := cors.New(cors.Options{
