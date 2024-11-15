@@ -7,6 +7,8 @@ import { MatChipsModule } from '@angular/material/chips';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { LoaderComponent } from '../loader/loader.component';
+import { MatBottomSheet } from '@angular/material/bottom-sheet';
+import { BottomSheetComponent } from '../bottom-sheet/bottom-sheet.component';
 
 @Component({
   selector: 'app-genre-rec',
@@ -16,7 +18,7 @@ import { LoaderComponent } from '../loader/loader.component';
   styleUrls: ['./genre-rec.component.css']
 })
 export class GenreRecComponent {
-  genres: string[] = ['Action', 'Animation', 'Comedy', 'Drama', 'Horror', 'Musical', 'Children', 'Romance', 'All'];
+  genres: string[] = ['All', 'Action', 'Animation', 'Comedy', 'Drama', 'Horror', 'Musical', 'Children', 'Romance'];
   selectedGenre: string = 'All';
   genreRecommendations: Movie[] = [];
   showRecommendations: boolean = false;
@@ -28,12 +30,18 @@ export class GenreRecComponent {
 
   constructor(
     private dataService: DataService,
-    private httpClient: HttpClient
+    private httpClient: HttpClient,
+    private _bottomSheet: MatBottomSheet
   ) {}
 
   ngOnInit(): void {
     this.onButtonSelect(this.selectedGenre);
     this.getRecommendations();
+  }
+
+  openBottomSheet(movie: Movie): void {
+    console.log('Opening bottom sheet with movie:', movie);
+    const bottomSheetRef = this._bottomSheet.open(BottomSheetComponent, {data: movie});
   }
 
   @HostListener('mousedown', ['$event'])
@@ -97,4 +105,6 @@ export class GenreRecComponent {
     const url = `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${this.apiKey}`;
     return this.httpClient.get<any>(url);
   }
+
+
 }

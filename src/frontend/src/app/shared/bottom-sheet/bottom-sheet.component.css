@@ -1,0 +1,13 @@
+.content {
+    padding: 20px;
+}
+
+.mat-bottom-sheet-container-medium {
+    width: 500px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}

@@ -1,7 +1,4 @@
 <div class="recommendation-div">
-    <div class="recommendation-title">
-        <h4>Feeling like watching something? Choose a genre!</h4>
-    </div>
     <section class="button-section">
         <!-- Display Material buttons for each genre -->
         <button mat-button *ngFor="let genre of genres"
@@ -13,7 +10,7 @@
     <div class="recommendation-content">
         <div class="genre-rec" *ngIf="showRecommendations" #genreRec>
             <div class="movie-card" *ngFor="let movie of genreRecommendations; let i = index">
-                <div class="img-div">
+                <div class="img-div" (click)="openBottomSheet(movie)">
                     <img *ngIf="movie.poster" [src]="movie.poster" alt="{{movie.title}}">
                 </div>
             </div>
