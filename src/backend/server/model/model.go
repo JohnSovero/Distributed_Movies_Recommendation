@@ -21,6 +21,12 @@ var clientAddresses = []string{
 	os.Getenv("NODO1"),
 	os.Getenv("NODO2"),
 	os.Getenv("NODO3"),
+	os.Getenv("NODO4"),
+	os.Getenv("NODO5"),
+	os.Getenv("NODO6"),
+	os.Getenv("NODO7"),
+	os.Getenv("NODO8"),
+	os.Getenv("NODO9"),
 }
 
 var similarityScores map[int]float64
