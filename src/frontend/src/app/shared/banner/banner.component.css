@@ -1,58 +1,50 @@
-.movie-card {
-    opacity: 0;
-    transition: opacity 1s ease-in-out;
-    position: relative; /* Make movie card relative to allow absolute positioning inside */
-}
-
-.banner {
-    width: 300px;
-}
-
-.banner-container {
-    width: 300px;
-}
-
-p {
-    font-size: larger;
-    font-weight: 500;
-    margin: 0;
-    margin-right: 5px;
-    color: black;
-}
-
-h3 {
-    margin: 0;
-}
+.carousel-container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+  }
   
-.movie-card.visible {
-    opacity: 1;
-}
+  .carousel {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  
+  .carousel-slide {
+    display: flex;
+    /* transition: transform 0.5s ease-in-out; */
+  }
+  
+  .movie-card {
+    width: 100vw;
+    transition: transform 0.5s ease;
 
-.banner-container p{
-    text-align: left;
-    width: right;
-    margin-left: 10px;
-}
+    div {
+      img {
+        width: 100%;
+        height: 600px;
+        object-fit: cover;
+        object-position: center;
+      }
+    }
+  }
   
-.movie-card.hidden {
-    opacity: 0;
-    display: none;  /* Optionally, you can also use display: none here to prevent the element from occupying space */
-}
-  
-.movie-card img {
-    width: 100%;  /* Make sure the image fills the card */
-    height: auto; /* Maintain aspect ratio */
-    border-radius: 8px;
-    /* make it darker */
-    /* filter: brightness(70%); */
-}
-  
-.movie-title-overlay {
+  .carousel-nav {
     position: absolute;
-    bottom: 10px; /* Adjust based on your design */
-    left: 10px;   /* Adjust based on your design */
-    background-color: rgba(0, 0, 0, 0.5); /* Optional, dark background for better readability */
-    color: white; /* Title text color */
-    padding: 5px;
-    border-radius: 5px;
-}
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    z-index: 1;
+  }
+  
+  .left {
+    left: 10px;
+  }
+  
+  .right {
+    right: 10px;
+  }

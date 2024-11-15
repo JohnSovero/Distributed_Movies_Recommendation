@@ -1,12 +1,25 @@
-<div *ngIf="showRecommendations" class="banner-container">
-  <p>Movies you might like</p>
-  <div class="banner">
-    <div *ngFor="let movie of bannerRecommendations; let i = index" class="movie-card" 
-         [ngClass]="{ 'visible': i === currentMovieIndex, 'hidden': i !== currentMovieIndex }">
-      <img *ngIf="movie.poster" [src]="movie.poster" alt="{{ movie.title }}" />
-      <div class="movie-title-overlay">
-        <h3>{{ movie.vote_avg }}</h3>
+<div *ngIf="showRecommendations" class="carousel-container">
+  <div class="carousel">
+    <button (click)="prevSlide()" class="carousel-nav left">&lt;</button>
+    
+    <div class="carousel-slide">
+      <div
+        *ngFor="let movie of bannerRecommendations; let i = index"
+        class="movie-card"
+        [ngStyle]="{ 'transform': 'translateX(' + ((i - currentMovieIndex) * 100) + '%)' }"
+      >
+        <div *ngIf="movie.poster">
+          <img [src]="movie.poster" alt="{{ movie.title }}" />
+          <div class="movie-title-overlay">
+            <h3>{{ movie.vote_avg }}</h3>
+          </div>
+        </div>
       </div>
     </div>
+    
+    <button (click)="nextSlide()" class="carousel-nav right">&gt;</button>
   </div>
+</div>
+<div *ngIf="!showRecommendations">
+  <app-loader></app-loader>
 </div>

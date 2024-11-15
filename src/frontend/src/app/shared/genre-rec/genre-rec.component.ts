@@ -33,7 +33,7 @@ export class GenreRecComponent {
   }
 
   getRecommendations(): void {
-    console.log('Selected option:', this.selectedGenre);
+    // console.log('Selected option:', this.selectedGenre);
     this.showRecommendations = false;
     this.dataService.getRecommendations(this.selectedGenre).subscribe((movies) => {
       this.genreRecommendations = movies;

@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { UserService } from './user.service';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { Movie } from '../models/movie.model';
 
 @Injectable({
@@ -19,6 +19,8 @@ export class DataService {
   }
 
   getRecommendations(genre: string): Observable<Movie[]> {
-    return this.http.get<Movie[]>(`${this.baseUrl}/recommendations/5/genres/${genre}/users/${this.userId}`);
+    return this.http.get<Movie[]>(`${this.baseUrl}/recommendations/5/genres/${genre}/users/${this.userId}`).pipe(
+      map((movies) => movies.map(movie => ({ ...movie, poster: '' })))
+    );
   }
 }

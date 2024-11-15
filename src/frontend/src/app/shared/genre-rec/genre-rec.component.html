@@ -14,7 +14,7 @@
         <div class="genre-rec" *ngIf="showRecommendations">
             <div class="movie-card" *ngFor="let movie of genreRecommendations; let i = index">
                 <div class="img-div">
-                    <img [src]="movie.poster" alt="{{movie.title}}">
+                    <img *ngIf="movie.poster" [src]="movie.poster" alt="{{movie.title}}">
                 </div>
             </div>
         </div>
