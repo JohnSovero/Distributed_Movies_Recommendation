@@ -29,8 +29,9 @@ h3 {
 }
 
 .banner-container p{
-    text-align: right;
+    text-align: left;
     width: right;
+    margin-left: 10px;
 }
   
 .movie-card.hidden {

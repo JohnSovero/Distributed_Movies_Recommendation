@@ -2,14 +2,14 @@ import { Component } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { WebsocketService } from '../../core/services/websocket.service';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Movie } from '../../core/models/movie.model';
 import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-banner',
   standalone: true,
-  imports: [CommonModule, HttpClientModule],
+  imports: [CommonModule],
   templateUrl: './banner.component.html',
   styleUrls: ['./banner.component.css']
 })

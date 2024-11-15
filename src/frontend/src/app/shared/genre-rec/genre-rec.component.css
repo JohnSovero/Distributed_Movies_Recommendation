@@ -1,0 +1,56 @@
+button {
+    margin: 5px;
+}
+  
+/* Style for selected button */
+button.selected {
+    background-color: #ba005c;  /* Use the primary color from Material theme */
+    color: white;  /* Change the text color */
+    border: 2px solid #ba005c; /* Optional: add a border with primary color */
+}
+  
+/* Optional: Add hover effect for non-selected buttons */
+button:not(.selected):hover {
+    background-color: #f1f1f1;
+}
+
+.movie-card {
+    width: 150px;
+    min-width: 150px;
+    outline: 1px solid green;
+
+    .img-div {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin: 10px auto;
+        img {
+            width: 80%;
+            height: auto;
+            margin: 0 auto;
+        }
+    }
+}
+
+.genre-rec {
+    display: flex;
+    /* make it scrollable */
+    overflow-x: auto;
+    /* hide scrollbar */
+    scrollbar-width: none;
+    justify-content: left;
+    gap: 20px;
+    padding: 10px 0;
+}
+
+.genre-rec:first-child {
+    margin-left: 10px;
+}
+
+.button-section {
+    margin: 10px 0;
+}
+
+.recommendation-div {
+    margin: 0 10px
+}

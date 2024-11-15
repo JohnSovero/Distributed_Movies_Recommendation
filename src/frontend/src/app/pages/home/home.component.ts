@@ -5,10 +5,8 @@ import { GenreRecComponent } from '../../shared/genre-rec/genre-rec.component';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [BannerComponent, GenreRecComponent], // Include HttpClientModule here
+  imports: [BannerComponent, GenreRecComponent],
   templateUrl: './home.component.html',
-  styleUrl: './home.component.css'
+  styleUrls: ['./home.component.css']
 })
-export class HomeComponent {
-  
-}
+export class HomeComponent {}
