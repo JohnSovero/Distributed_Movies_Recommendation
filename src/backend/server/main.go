@@ -61,8 +61,10 @@ func serverHandleConnection(conn net.Conn, ratings map[int]types.User, movies ma
 
 		var recommendations []types.Movie
 
-		if body.Genre == "All" {
+		if body.Genre == "Random" {
 			recommendations = model.GenerateRecommendationsAboveAverage(ratings, body.UserID, movies, body.NumRec)
+		} else if body.Genre == "All" {
+			recommendations = model.GenerateTopRecommendations(ratings, body.UserID, movies, body.NumRec)
 		} else {
 			recommendations = model.GenerateRecommendationsByGenre(ratings, body.UserID, body.NumRec, movies, body.Genre)
 		}

@@ -1,0 +1,22 @@
+<div class="recommendation-div">
+    <section class="button-section">
+        <!-- Display Material buttons for each genre -->
+        <button mat-button *ngFor="let genre of genres"
+                [class.selected]="genre === selectedGenre"
+                (click)="onButtonSelect(genre)">
+          {{ genre }}
+        </button>
+    </section>
+    <div class="recommendation-content">
+        <div class="genre-rec" *ngIf="showRecommendations" #genreRec>
+            <div class="movie-card" *ngFor="let movie of genreRecommendations; let i = index">
+                <div class="img-div" (click)="openBottomSheet(movie)">
+                    <img *ngIf="movie.poster" [src]="movie.poster" alt="{{movie.title}}">
+                </div>
+            </div>
+        </div>
+        <div *ngIf="!showRecommendations" class="loading-div">
+            <app-loader></app-loader>
+        </div>
+    </div>
+</div>

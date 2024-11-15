@@ -1,0 +1,13 @@
+<div class="content">
+    <div class="header">
+        <p class="title">{{data.title}}</p>
+        <mat-chip [ngClass]="{'red': +data.vote_avg < 5, 'yellow': +data.vote_avg >= 5 && +data.vote_avg <= 7.9, 'green': +data.vote_avg > 7.9}">
+            {{data.vote_avg | number}}
+        </mat-chip>
+    </div>
+    <div class="content">
+        <div class="genres-div">
+            <mat-chip *ngFor="let genre of data.genres, let i = index" class="example-box" cdkDrag>{{genre}}</mat-chip>
+        </div>
+    </div>
+</div>
