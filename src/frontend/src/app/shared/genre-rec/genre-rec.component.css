@@ -14,10 +14,14 @@ button:not(.selected):hover {
     background-color: #f1f1f1;
 }
 
+.button-section {
+    display: flex;
+    justify-content: center;
+}
+
 .movie-card {
-    width: 150px;
-    min-width: 150px;
-    outline: 1px solid green;
+    width: 200px;
+    min-width: 250px;
 
     .img-div {
         width: 100%;
@@ -28,6 +32,12 @@ button:not(.selected):hover {
             width: 80%;
             height: auto;
             margin: 0 auto;
+            border-radius: 10px;
+            transition: all 0.5s ease-in-out;
+        }
+        img:hover {
+            cursor: pointer;
+            width: 90%;
         }
     }
 }
@@ -36,11 +46,25 @@ button:not(.selected):hover {
     display: flex;
     /* make it scrollable */
     overflow-x: auto;
-    /* hide scrollbar */
-    scrollbar-width: none;
+    scroll-behavior: smooth; /* Smooth scrolling */
+    -webkit-overflow-scrolling: touch; /* iOS touch scrolling support */
     justify-content: left;
     gap: 20px;
     padding: 10px 0;
+    height: 350px;
+}
+
+.genre-rec::-webkit-scrollbar {
+    height: 8px; /* Adjust scrollbar height */
+}
+
+.genre-rec::-webkit-scrollbar-thumb {
+    background: #888; /* Scrollbar thumb color */
+    border-radius: 4px; /* Round the corners of the thumb */
+}
+
+.genre-rec::-webkit-scrollbar-thumb:hover {
+    background: #555; /* Darker on hover */
 }
 
 .genre-rec:first-child {
@@ -48,9 +72,16 @@ button:not(.selected):hover {
 }
 
 .button-section {
-    margin: 10px 0;
+    margin: 20px 0;
 }
 
 .recommendation-div {
-    margin: 0 10px
+    margin: 0 20px;
+}
+
+.recommendation-content {
+    height: 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

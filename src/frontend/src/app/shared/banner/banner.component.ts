@@ -17,8 +17,9 @@ import { LoaderComponent } from '../loader/loader.component';
 export class BannerComponent {
   bannerRecommendations: Movie[] = [];
   private bannerSubscription!: Subscription;
-  currentMovieIndex: number = 0;
+  selectedIndex: number = 0;
   showRecommendations: boolean = false;
+  private rotationTimeout!: ReturnType<typeof setTimeout>;
 
   constructor(
     private websocketService: WebsocketService,
@@ -44,23 +45,23 @@ export class BannerComponent {
   }
 
   startBannerRotation() {
-    setInterval(() => {
-      this.currentMovieIndex = (this.currentMovieIndex + 1) % this.bannerRecommendations.length;
-    }, 15000);
+    const rotateBanner = () => {
+      if (this.bannerRecommendations.length > 0) {
+        this.selectedIndex = (this.bannerRecommendations.length + this.selectedIndex + 1) % this.bannerRecommendations.length;
+        console.log(this.selectedIndex);
+      }
+
+      // Schedule the next rotation with a dynamically adjusted interval
+      const nextInterval = 15000;
+      this.rotationTimeout = setTimeout(rotateBanner, nextInterval);
+    };
+
+    rotateBanner();
   }
 
   ngOnDestroy() {
+    clearTimeout(this.rotationTimeout);
     this.bannerSubscription.unsubscribe();
     this.websocketService.disconnect();
-  }
-
-  prevSlide() {
-    this.currentMovieIndex = 
-      (this.currentMovieIndex > 0) ? this.currentMovieIndex - 1 : this.bannerRecommendations.length - 1;
-  }
-
-  nextSlide() {
-    this.currentMovieIndex = 
-      (this.currentMovieIndex < this.bannerRecommendations.length - 1) ? this.currentMovieIndex + 1 : 0;
   }
 }

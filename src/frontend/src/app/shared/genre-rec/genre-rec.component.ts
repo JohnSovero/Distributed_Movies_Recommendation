@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component } from '@angular/core';
+import { Component, ElementRef, HostListener, ViewChild } from '@angular/core';
 import { DataService } from '../../core/services/data.service';
 import { Movie } from '../../core/models/movie.model';
 import { environment } from '../../../environments/environment';
@@ -21,6 +21,10 @@ export class GenreRecComponent {
   genreRecommendations: Movie[] = [];
   showRecommendations: boolean = false;
   private apiKey = environment.tmdbApiKey;
+  @ViewChild('genreRec') genreRec: ElementRef | undefined;
+  private isMouseDown: boolean = false;
+  private startX: number = 0;
+  private scrollLeft: number = 0;
 
   constructor(
     private dataService: DataService,
@@ -30,6 +34,28 @@ export class GenreRecComponent {
   ngOnInit(): void {
     this.onButtonSelect(this.selectedGenre);
     this.getRecommendations();
+  }
+
+  @HostListener('mousedown', ['$event'])
+  onMouseDown(event: MouseEvent): void {
+    if (this.genreRec?.nativeElement) {
+      this.isMouseDown = true;
+      this.startX = event.pageX - this.genreRec.nativeElement.offsetLeft;
+      this.scrollLeft = this.genreRec.nativeElement.scrollLeft;
+    }
+  }
+
+  @HostListener('mouseup')
+  onMouseUp(): void {
+    this.isMouseDown = false;
+  }
+
+  @HostListener('mousemove', ['$event'])
+  onMouseMove(event: MouseEvent): void {
+    if (!this.isMouseDown || !this.genreRec?.nativeElement) return;
+    const x = event.pageX - this.genreRec.nativeElement.offsetLeft;
+    const walk = (x - this.startX) * 2; // Adjust the 2 for scroll speed
+    this.genreRec.nativeElement.scrollLeft = this.scrollLeft - walk;
   }
 
   getRecommendations(): void {

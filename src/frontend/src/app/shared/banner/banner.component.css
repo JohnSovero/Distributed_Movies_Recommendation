@@ -1,50 +1,111 @@
-.carousel-container {
-    position: relative;
-    width: 100%;
-    overflow: hidden;
-  }
-  
-  .carousel {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-  
-  .carousel-slide {
-    display: flex;
-    /* transition: transform 0.5s ease-in-out; */
-  }
-  
-  .movie-card {
-    width: 100vw;
-    transition: transform 0.5s ease;
+.banner-div {
+  position: block;
+  width: 100%;
+  height: 600px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
 
-    div {
-      img {
-        width: 100%;
-        height: 600px;
-        object-fit: cover;
-        object-position: center;
-      }
+.poster-active {
+  display: block;
+  img {
+    width: 100vw;
+    height: 600px;
+    object-fit: cover;
+    object-position: center;
+    /* brightness */
+    filter: brightness(60%);
+    /* vanish on bottom */
+    mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+  }
+}
+
+
+.poster-info {
+  position: absolute;
+  left: 10px;
+  bottom: 20px;
+  h1 {
+    font-size: 3rem;
+    color: white;
+  }
+}
+
+.poster-hidden {
+  display: none;
+}
+
+.carousel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.fade {
+  animation: fade 1.5s;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+
+/*.carousel-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.carousel {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.carousel-slide {
+  display: flex;
+  /* transition: transform 0.5s ease-in-out; */
+/*}
+
+.movie-card {
+  width: 100vw;
+  transition: transform 0.5s ease;
+
+  div {
+    img {
+      width: 100%;
+      height: 600px;
+      object-fit: cover;
+      object-position: center;
     }
   }
-  
-  .carousel-nav {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background-color: rgba(0, 0, 0, 0.5);
-    color: white;
-    border: none;
-    font-size: 2rem;
-    cursor: pointer;
-    z-index: 1;
-  }
-  
-  .left {
-    left: 10px;
-  }
-  
-  .right {
-    right: 10px;
-  }
+}
+
+.carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.left {
+  left: 10px;
+}
+
+.right {
+  right: 10px;
+}
+*/
