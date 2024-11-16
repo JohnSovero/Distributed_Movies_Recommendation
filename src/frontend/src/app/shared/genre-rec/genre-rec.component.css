@@ -86,3 +86,20 @@ button:not(.selected):hover {
     align-items: center;
     justify-content: center;
 }
+
+mat-slider {
+    width: 500px;
+}
+
+.slider-section {
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: center;
+}
+
+.genre-title {
+    color: #ba005c;
+    font-size: 20px;
+    font-weight: 500;
+    margin-left: 30px;
+}

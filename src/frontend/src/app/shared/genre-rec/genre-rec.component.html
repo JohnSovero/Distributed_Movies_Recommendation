@@ -2,11 +2,20 @@
     <section class="button-section">
         <!-- Display Material buttons for each genre -->
         <button mat-button *ngFor="let genre of genres"
-                [class.selected]="genre === selectedGenre"
+                [class.selected]="genre === selectedGenreTemp"
                 (click)="onButtonSelect(genre)">
           {{ genre }}
         </button>
     </section>
+    <div class="slider-section">
+        <mat-slider min="15" max="100" step="5" showTickMarks discrete [displayWith]="formatLabel">
+            <input matSliderThumb value="50" [(ngModel)]="sliderValue">
+        </mat-slider>
+        <button mat-button [disabled]="selectedGenre === selectedGenreTemp || showRecommendations === false" (click)="recommendMovies()">Recommend</button>
+    </div>
+    <div class="genre-title" *ngIf="showRecommendations">
+        <p class="genre-title">{{ selectedGenre }} recommendations</p>
+    </div>
     <div class="recommendation-content">
         <div class="genre-rec" *ngIf="showRecommendations" #genreRec>
             <div class="movie-card" *ngFor="let movie of genreRecommendations; let i = index">
