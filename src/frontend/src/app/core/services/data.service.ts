@@ -18,8 +18,8 @@ export class DataService {
     this.userId = this.userService.getUserId();
   }
 
-  getRecommendations(genre: string): Observable<Movie[]> {
-    return this.http.get<Movie[]>(`${this.baseUrl}/recommendations/50/genres/${genre}/users/${this.userId}`).pipe(
+  getRecommendations(genre: string, numRec: number): Observable<Movie[]> {
+    return this.http.get<Movie[]>(`${this.baseUrl}/recommendations/${numRec}/genres/${genre}/users/${this.userId}`).pipe(
       map((movies) => movies.map(movie => ({ ...movie, poster: '' })))
     );
   }

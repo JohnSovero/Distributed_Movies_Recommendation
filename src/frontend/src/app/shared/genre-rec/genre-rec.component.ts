@@ -9,24 +9,24 @@ import { MatButtonModule } from '@angular/material/button';
 import { LoaderComponent } from '../loader/loader.component';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { BottomSheetComponent } from '../bottom-sheet/bottom-sheet.component';
+import { MatSliderModule } from '@angular/material/slider';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-genre-rec',
   standalone: true,
-  imports: [MatChipsModule, CommonModule, MatButtonModule, LoaderComponent],
+  imports: [MatChipsModule, CommonModule, MatButtonModule, LoaderComponent, MatSliderModule, FormsModule],
   templateUrl: './genre-rec.component.html',
   styleUrls: ['./genre-rec.component.css']
 })
 export class GenreRecComponent {
   genres: string[] = ['All', 'Action', 'Animation', 'Comedy', 'Drama', 'Horror', 'Musical', 'Children', 'Romance'];
   selectedGenre: string = 'All';
+  selectedGenreTemp: string = 'All';
   genreRecommendations: Movie[] = [];
   showRecommendations: boolean = false;
   private apiKey = environment.tmdbApiKey;
-  @ViewChild('genreRec') genreRec: ElementRef | undefined;
-  private isMouseDown: boolean = false;
-  private startX: number = 0;
-  private scrollLeft: number = 0;
+  sliderValue: number = 50;
 
   constructor(
     private dataService: DataService,
@@ -35,8 +35,7 @@ export class GenreRecComponent {
   ) {}
 
   ngOnInit(): void {
-    this.onButtonSelect(this.selectedGenre);
-    this.getRecommendations();
+    this.getRecommendations(this.sliderValue);
   }
 
   openBottomSheet(movie: Movie): void {
@@ -44,32 +43,9 @@ export class GenreRecComponent {
     const bottomSheetRef = this._bottomSheet.open(BottomSheetComponent, {data: movie});
   }
 
-  @HostListener('mousedown', ['$event'])
-  onMouseDown(event: MouseEvent): void {
-    if (this.genreRec?.nativeElement) {
-      this.isMouseDown = true;
-      this.startX = event.pageX - this.genreRec.nativeElement.offsetLeft;
-      this.scrollLeft = this.genreRec.nativeElement.scrollLeft;
-    }
-  }
-
-  @HostListener('mouseup')
-  onMouseUp(): void {
-    this.isMouseDown = false;
-  }
-
-  @HostListener('mousemove', ['$event'])
-  onMouseMove(event: MouseEvent): void {
-    if (!this.isMouseDown || !this.genreRec?.nativeElement) return;
-    const x = event.pageX - this.genreRec.nativeElement.offsetLeft;
-    const walk = (x - this.startX) * 2; // Adjust the 2 for scroll speed
-    this.genreRec.nativeElement.scrollLeft = this.scrollLeft - walk;
-  }
-
-  getRecommendations(): void {
-    // console.log('Selected option:', this.selectedGenre);
+  getRecommendations(numRec: number): void {
     this.showRecommendations = false;
-    this.dataService.getRecommendations(this.selectedGenre).subscribe((movies) => {
+    this.dataService.getRecommendations(this.selectedGenreTemp, numRec).subscribe((movies) => {
       this.genreRecommendations = movies;
       console.log('Movies arrived! time:', new Date().toLocaleTimeString());
       this.updatePosterPaths();
@@ -79,10 +55,14 @@ export class GenreRecComponent {
   }
 
   onButtonSelect(genre: string): void {
-    if (this.selectedGenre !== genre && this.showRecommendations == true) {
-      this.selectedGenre = genre;
-      this.getRecommendations();
+    if (this.selectedGenreTemp !== genre) {
+      this.selectedGenreTemp = genre;
     }
+  }
+
+  recommendMovies(): void {
+    this.selectedGenre = this.selectedGenreTemp;
+    this.getRecommendations(this.sliderValue);
   }
 
   updatePosterPaths() {
@@ -108,5 +88,11 @@ export class GenreRecComponent {
     return this.httpClient.get<any>(url);
   }
 
+  formatLabel(value: number): string {
+    if (value >= 1000) {
+      return Math.round(value / 1000) + 'k';
+    }
+    return value.toString();
+  }
 
 }
