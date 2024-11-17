@@ -154,6 +154,18 @@ services:
       - app
     depends_on:
       - server
+
+  # Angular frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "4200:4200"
+    networks:
+      - app
+    depends_on:
+      - server
   
 networks:
   nodes_network:
