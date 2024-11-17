@@ -43,7 +43,7 @@ func sentToClient(userRatings map[int]float64, userGroups map[int]types.User, cl
 	var attempts int
 	for attempts = 0; attempts < len(clientAddresses); attempts++ {
 		clientAddress := clientAddresses[clientID]
-		conn, err := net.Dial("tcp", clientAddress)
+		conn, err := net.DialTimeout("tcp", clientAddress, TIMEOUT)
 		if err == nil {
 			data := types.ToClientData{
 				User1: userRatings,
@@ -65,10 +65,9 @@ func sentToClient(userRatings map[int]float64, userGroups map[int]types.User, cl
 			HandleClients(conn)
 			return
 		} else {
-			fmt.Printf("Error al conectar al cliente: %v. Reintentando...\n", err)
+			fmt.Printf("Error al conectar al cliente: %v. Reintentando... con el client %d\n", err, (clientID+1)%len(clientAddresses))
 			clientID = (clientID + 1) % len(clientAddresses)
 		}
-		fmt.Printf("Intentando con el cliente %d\n", clientID%len(clientAddresses))
 	}
 	if attempts == len(clientAddresses) {
 		waitGroupResponses.Done()
