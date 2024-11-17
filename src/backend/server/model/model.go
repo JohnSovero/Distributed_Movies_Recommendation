@@ -1,20 +1,34 @@
 package model
 
 import (
-	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types"
-	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/utils"
 	"bufio"
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/types"
+	"github.com/JohnSovero/Distributed_Movies_Recommendation/src/backend/utils"
 )
 
 // Variables globales
-var clientAddresses = []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+var clientAddresses = []string{
+	os.Getenv("NODO1"),
+	os.Getenv("NODO2"),
+	os.Getenv("NODO3"),
+	os.Getenv("NODO4"),
+	os.Getenv("NODO5"),
+	os.Getenv("NODO6"),
+	os.Getenv("NODO7"),
+	os.Getenv("NODO8"),
+	os.Getenv("NODO9"),
+}
+
 var similarityScores map[int]float64
 var waitGroupResponses = sync.WaitGroup{}
 var mutex = &sync.Mutex{}
@@ -232,4 +246,54 @@ func GenerateRecommendationsByGenre(users map[int]types.User, userIndex int, num
 	wg2.Wait() // Wait for all goroutines to finish
 
 	return moviesGenre[:numRecs]
+}
+
+func GenerateTopRecommendations(users map[int]types.User, userIndex int, movies map[int]types.Movie, numRecs int) []types.Movie {
+	similarityUsersScores := findSimilarUsers(users, userIndex)
+	recommendations := make(map[int]float64)
+
+	var wg sync.WaitGroup
+	var mutex = &sync.Mutex{}
+
+	for similarUserID, similarity := range similarityUsersScores {
+		wg.Add(1)
+		go func(similarUserID int, similarity float64) {
+			defer wg.Done()
+
+			// Iterar sobre las calificaciones del usuario similar
+			for itemID, rating := range users[similarUserID].Ratings {
+				if _, exists := users[userIndex].Ratings[itemID]; !exists { // Si el usuario principal no ha calificado el ítem
+					mutex.Lock()
+					// Ponderamos el rating por la similitud entre el usuario principal y el usuario similar
+					weightedRating := rating * similarity
+					recommendations[itemID] += weightedRating
+					mutex.Unlock()
+				}
+			}
+		}(similarUserID, similarity)
+	}
+	wg.Wait()
+
+	// Convert the recommendations map to a slice of pairs
+	type recommendationPair struct {
+		MovieID int
+		Rating  float64
+	}
+	var recommendationPairs []recommendationPair
+	for movieID, rating := range recommendations {
+		recommendationPairs = append(recommendationPairs, recommendationPair{MovieID: movieID, Rating: rating})
+	}
+
+	// Sort the recommendation pairs by rating in descending order
+	sort.Slice(recommendationPairs, func(i, j int) bool {
+		return recommendationPairs[i].Rating > recommendationPairs[j].Rating
+	})
+
+	// Get the top numRecs recommendations
+	var recommendedMovies []types.Movie
+	for i := 0; i < numRecs && i < len(recommendationPairs); i++ {
+		recommendedMovies = append(recommendedMovies, movies[recommendationPairs[i].MovieID])
+	}
+
+	return recommendedMovies
 }

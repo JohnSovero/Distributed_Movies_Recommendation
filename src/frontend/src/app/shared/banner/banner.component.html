@@ -1,0 +1,14 @@
+<div class="banner-div">
+  <div class="carousel" *ngIf="showRecommendations">
+    <div class="poster-container" *ngFor="let movie of bannerRecommendations; let i = index"
+    [ngClass]="{'poster-active': selectedIndex === i, 'poster-hidden': selectedIndex !== i}" (click)="openBottomSheet(movie)">
+      <img [src]="movie.poster" alt="{{movie.title}}">
+      <div class="poster-info">
+        <h1>{{movie.title}}</h1>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="!showRecommendations">
+    <app-loader></app-loader>
+  </div>
+</div>

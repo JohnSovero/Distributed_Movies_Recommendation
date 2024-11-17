@@ -3,8 +3,10 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 )
 
 type Movie struct {
@@ -28,37 +30,31 @@ type RecommendationRequest struct {
 var users []int
 var movies []Movie
 
-// Configuración del actualizador de WebSocket
-// var upgrader = websocket.Upgrader{
-// 	CheckOrigin: func(r *http.Request) bool {
-// 		return true // Cambiar esto para mayor seguridad en producción
-// 	},
-// }
-
 // Función para definir los endpoints de la API
-func defineEndpoints() {
+func defineEndpoints(port string) {
 	router := mux.NewRouter()
 
-	// http.HandleFunc("/movies/", getAllMovies)
-	// http.HandleFunc("/users/", getAllUsers)
-	// http.HandleFunc("/movie/", getMovieByID)
-	// http.HandleFunc("recommendations/", getRecommendations)
-
+	port = ":" + port
 	router.HandleFunc("/movies", getAllMovies).Methods("GET")
 	router.HandleFunc("/users", getAllUsers).Methods("GET")
 	router.HandleFunc("/movies/{id}", getMovieByID).Methods("GET")
-	// Endpoint para obtener recomendaciones
 	router.HandleFunc("/recommendations/{numRec}/genres/{genre}/users/{id}", getRecommendations).Methods("GET")
-	// Endpoint para obtener recomendaciones arriba del promedio usando WebSocket
-	// router.HandleFunc("/recommendations/above-average", wsGetAboveAverageRecommendations)
 	router.HandleFunc("/recommendations/above-average", wsGetAboveAverageRecommendations).Methods("GET")
 
-	log.Fatal(http.ListenAndServe(":9015", router))
+	corsMiddleware := cors.New(cors.Options{
+		AllowedOrigins: []string{"http://localhost:4200"}, // Replace with your frontend URL
+		AllowedMethods: []string{"GET", "OPTIONS"},
+		AllowedHeaders: []string{"Content-Type"},
+	})
+
+	log.Fatal(http.ListenAndServe(port, corsMiddleware.Handler(router)))
 }
 
 func main() {
-	loadData()        // Cargar datos iniciales
-	defineEndpoints() // Definir los endpoints de la API
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "9015" // Puerto por defecto si no está configurado
+	}
 	loadData()
-	defineEndpoints()
+	defineEndpoints(port)
 }

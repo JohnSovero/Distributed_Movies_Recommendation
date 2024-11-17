@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"net"
 	"net/http"
 	"strconv"
@@ -83,7 +82,7 @@ func getRecommendations(resp http.ResponseWriter, req *http.Request) {
 	}
 	genre := vars["genre"]
 
-	conn, err := net.Dial("tcp", "localhost:9000")
+	conn, err := net.Dial("tcp", "server:9000")
 	if err != nil {
 		http.Error(resp, "Error connecting to the server", http.StatusInternalServerError)
 		return
@@ -133,7 +132,7 @@ func getRecommendations(resp http.ResponseWriter, req *http.Request) {
 // Helper function to send the "above average" recommendation request to the server
 func sendAboveAverageRequest(conn *websocket.Conn, userID int) {
 	// Dial the TCP server
-	tcpConn, err := net.Dial("tcp", "localhost:9000")
+	tcpConn, err := net.Dial("tcp", "server:9000")
 	if err != nil {
 		log.Println("Error connecting to TCP server:", err)
 		return
@@ -144,7 +143,7 @@ func sendAboveAverageRequest(conn *websocket.Conn, userID int) {
 	req := RecommendationRequest{
 		UserID: userID,
 		NumRec: 5, // or any number you want to set for recommendations
-		Genre:  "All",
+		Genre:  "Random",
 	}
 	reqBytes, _ := json.Marshal(req)
 	fmt.Fprintln(tcpConn, string(reqBytes)) // Send request to the server
@@ -163,8 +162,18 @@ func sendAboveAverageRequest(conn *websocket.Conn, userID int) {
 	}
 }
 
-// wsGetAboveAverageRecommendations is called whenever a new WebSocket connection is established
 func wsGetAboveAverageRecommendations(resp http.ResponseWriter, req *http.Request) {
+	// Get the user ID from the query parameters
+	userIDStr := req.URL.Query().Get("userId")
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(resp, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	// Log or use the userID
+	log.Printf("Received User ID: %d", userID)
+
 	// Upgrade HTTP to WebSocket
 	conn, err := upgrader.Upgrade(resp, req, nil)
 	if err != nil {
@@ -173,19 +182,41 @@ func wsGetAboveAverageRecommendations(resp http.ResponseWriter, req *http.Reques
 	}
 	defer conn.Close()
 
-	// Assign a random user ID
-	userID := rand.Intn(10)
+	// Channel to stop the loop
+	stop := make(chan struct{})
+
+	// Start a goroutine to listen for WebSocket close events
+	go func() {
+		// This will block until the connection is closed or an error occurs
+		for {
+			_, _, err := conn.NextReader()
+			if err != nil {
+				close(stop) // Signal to stop the ticker loop
+				break
+			}
+		}
+	}()
+
+	// Log or use the userID for further processing
 	log.Printf("Assigned User ID: %d", userID)
 
 	// Send initial request
 	sendAboveAverageRequest(conn, userID)
 
-	// Set up a ticker to send requests every minute
-	ticker := time.NewTicker(10 * time.Second)
+	// Set up a ticker to send requests every 1 Minute
+	ticker := time.NewTicker(2 * time.Minute)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		// Send request every minute
-		sendAboveAverageRequest(conn, userID)
+	// Loop to send requests periodically
+	for {
+		select {
+		case <-ticker.C:
+			// Send request every 2 minutes
+			sendAboveAverageRequest(conn, userID)
+		case <-stop:
+			// Stop the loop if the WebSocket is closed
+			log.Println("WebSocket closed by client")
+			return
+		}
 	}
 }

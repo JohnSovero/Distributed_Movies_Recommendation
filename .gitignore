@@ -31,3 +31,5 @@ go.work.sum
 /src/frontend/node_modules
 
 /node_modules
+
+environment.ts

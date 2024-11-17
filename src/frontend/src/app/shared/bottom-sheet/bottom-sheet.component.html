@@ -1,0 +1,20 @@
+<div class="content" [ngStyle]="{'background-image': 'url(' + data.poster + ')'}">
+    <div class="information">
+        <div class="header">
+            <div class="title-div">
+                <p class="title">{{data.title}} ({{data.year}})</p>
+            </div>
+            <mat-basic-chip class="rating" [ngClass]="{'red': +data.vote_avg < 5, 'yellow': +data.vote_avg >= 5 && +data.vote_avg <= 7.9, 'green': +data.vote_avg > 7.9}">
+                {{data.vote_avg | number}}
+            </mat-basic-chip>
+        </div>
+        <div class="content-div">
+            <div class="genres-div">
+                <mat-basic-chip class="genre" *ngFor="let genre of data.genres, let i = index">{{genre}}</mat-basic-chip>
+            </div>
+            <div class="desc-section">
+                <p>{{data.overview}}</p>
+            </div>
+        </div>
+    </div>
+</div>
