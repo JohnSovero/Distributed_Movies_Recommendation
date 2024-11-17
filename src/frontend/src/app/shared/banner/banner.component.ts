@@ -6,6 +6,8 @@ import { HttpClient } from '@angular/common/http';
 import { Movie } from '../../core/models/movie.model';
 import { CommonModule } from '@angular/common';
 import { LoaderComponent } from '../loader/loader.component';
+import { BottomSheetComponent } from '../bottom-sheet/bottom-sheet.component';
+import { MatBottomSheet } from '@angular/material/bottom-sheet';
 
 @Component({
   selector: 'app-banner',
@@ -47,7 +49,8 @@ export class BannerComponent {
 
   constructor(
     private websocketService: WebsocketService,
-    private httpClient: HttpClient
+    private httpClient: HttpClient,
+    private _bottomSheet: MatBottomSheet
   ) {}
 
   ngOnInit(): void {
@@ -66,6 +69,11 @@ export class BannerComponent {
         this.showRecommendations = true;
       }
     );
+  }
+
+  openBottomSheet(movie: Movie): void {
+    console.log('Opening bottom sheet with movie:', movie);
+    const bottomSheetRef = this._bottomSheet.open(BottomSheetComponent, {data: movie});
   }
 
   startBannerRotation() {
