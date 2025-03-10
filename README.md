@@ -1,20 +1,21 @@
-# Distributed_Movies_Recommendation
-PC4 del curso de Programacion Concurrente y Distribuida
+# Movies App Recomender with Golang using Distributed and Concurrent Programming
+---
+## Dataset
+[MovieLens Dataset](https://grouplens.org/datasets/movielens/latest/)
 
-Dataset: https://grouplens.org/datasets/movielens/25m/
+# How to Use
 
+- To execute the code, download the ZIP of 25 million data and extract them in the DATASET/ folder
+- Then execute the Main.go with the "Go Run Main.go" command and customers with "Go Run Client.go", placing on the corresponding route for each one.
+- The datasets rise to the repository are of an example since Github does not allow 660 MB CSV files
+- Do not forget to rename the Movies.CSV file as movies25.csv and ratings.csv as ratings25.csv
 
-- Para ejecutar el código, descargar el zip de 25 millones de datos y extraerlos en la carpeta dataset/
-- Luego ejecutar el main.go con el comando "go run main.go" y los clientes con "go run client.go", situándose en la ruta correspondiente para cada uno.
-- Los datasets subidos al repositorio son de ejemplo ya que github no permite archivos csv de 660 MB
-- No olvidar renombrar el archivo movies.csv como movies25.csv y ratings.csv como ratings25.csv
+If it is the first time you run the application, you must use the `Docker Compose Up -Build`.
 
-Si es la primera vez que ejecuta la aplicación, debe utilizar el comando `docker compose up --build`.
+For the proper functioning of the border, [create a developer account in TMDB] (https://developer.themoviedb.org/reference/Inter/geting-started) is required to get access to an API key and a reading token.
 
-Para el correcto funcionamiento del frontend, se requiere [crear una cuenta de desarrollador en TMDB](https://developer.themoviedb.org/reference/intro/getting-started) para obtener acceso a una llave API y a un token de lectura.
-
-Una vez con estas credenciales, generar dentro de la ruta `src/frontend/src/environments` un archivo `environment.ts` con contenido:
-<!-- codigo -->
+Once with these credentials, generate within the route `src/border/src/Environments` a file` Environment.ts` with content:
+<!-- CODE -->
 ```
 export const environment = {
     production: false,
@@ -23,6 +24,6 @@ export const environment = {
 };
 ```
 
-Integrantes:
+Members:
 - André Dario Pilco Chiuyare
 - John Davids Sovero Cubillas
